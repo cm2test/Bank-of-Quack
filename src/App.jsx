@@ -1,10 +1,8 @@
 // src/App.jsx
 import { Outlet, Link } from "react-router-dom";
 import { useState, useCallback, useEffect } from "react";
-import { supabase } from "./supabaseClient"; // Correct import for supabase client
-import "./App.css"; // Correct import for App.css
-
-// NO import for '../utils/dateUtils' should be here
+import { supabase } from "./supabaseClient";
+import "./App.css";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -31,8 +29,8 @@ function App() {
           throw settingsError;
         }
         console.log("App settings fetched:", appSettings);
-        let fetchedUser1Name = "User 1"; // Default
-        let fetchedUser2Name = "User 2"; // Default
+        let fetchedUser1Name = "User 1";
+        let fetchedUser2Name = "User 2";
         if (appSettings) {
           const user1Setting = appSettings.find((s) => s.key === "user1_name");
           const user2Setting = appSettings.find((s) => s.key === "user2_name");
@@ -87,7 +85,7 @@ function App() {
       }
     };
     fetchData();
-  }, []); // Empty dependency array means this runs once when the component mounts
+  }, []);
 
   // --- Transaction CRUD ---
   const addTransaction = useCallback(async (newTransactionData) => {
@@ -96,25 +94,24 @@ function App() {
         date: newTransactionData.date,
         description: newTransactionData.description,
         amount: newTransactionData.amount,
-        category_name: newTransactionData.category, // Ensure field name matches DB
-        paid_by_user_name: newTransactionData.paidBy, // Ensure field name matches DB
+        category_name: newTransactionData.category,
+        paid_by_user_name: newTransactionData.paidBy,
         split_type: newTransactionData.splitType,
       };
 
-      const { data, error: insertError } = await supabase // Renamed 'error' to 'insertError' for clarity
+      const { data, error: insertError } = await supabase
         .from("transactions")
         .insert([transactionToInsert])
-        .select(); // .select() returns the inserted row(s)
+        .select();
 
       if (insertError) throw insertError;
 
       if (data && data.length > 0) {
         setTransactions((prev) =>
           [data[0], ...prev].sort((a, b) => new Date(b.date) - new Date(a.date))
-        ); // Keep sorted
+        );
       }
     } catch (error) {
-      // This will catch errors from the try block, including thrown insertError
       console.error("Error adding transaction:", error);
       alert(`Error adding transaction: ${error.message}`);
     }
@@ -123,7 +120,6 @@ function App() {
   const updateTransaction = useCallback(async (updatedTransactionData) => {
     try {
       const transactionToUpdate = {
-        // id is used to identify the row, not updated itself
         date: updatedTransactionData.date,
         description: updatedTransactionData.description,
         amount: updatedTransactionData.amount,
@@ -132,20 +128,19 @@ function App() {
         split_type: updatedTransactionData.splitType,
       };
 
-      const { data, error: updateError } = await supabase // Renamed 'error'
+      const { data, error: updateError } = await supabase
         .from("transactions")
         .update(transactionToUpdate)
-        .eq("id", updatedTransactionData.id) // Specify which row to update
+        .eq("id", updatedTransactionData.id)
         .select();
 
       if (updateError) throw updateError;
 
       if (data && data.length > 0) {
-        setTransactions(
-          (prev) =>
-            prev
-              .map((t) => (t.id === data[0].id ? data[0] : t))
-              .sort((a, b) => new Date(b.date) - new Date(a.date)) // Keep sorted
+        setTransactions((prev) =>
+          prev
+            .map((t) => (t.id === data[0].id ? data[0] : t))
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
         );
       }
       setEditingTransaction(null);
@@ -157,7 +152,7 @@ function App() {
 
   const deleteTransaction = useCallback(async (transactionId) => {
     try {
-      const { error: deleteError } = await supabase // Renamed 'error'
+      const { error: deleteError } = await supabase
         .from("transactions")
         .delete()
         .eq("id", transactionId);
@@ -174,11 +169,6 @@ function App() {
   // --- Settings CRUD (User Names & Categories) ---
   const updateUserNames = useCallback(async (newUser1Name, newUser2Name) => {
     try {
-      // const updates = [ // This variable was unused and correctly removed
-      //   { key: 'user1_name', value: newUser1Name },
-      //   { key: 'user2_name', value: newUser2Name },
-      // ];
-
       const { error: err1 } = await supabase
         .from("app_settings")
         .update({ value: newUser1Name })
@@ -190,7 +180,7 @@ function App() {
         .eq("key", "user2_name");
       if (err2) throw err2;
 
-      setUserNames([newUser1Name, newUser2Name]); // Update local state on success
+      setUserNames([newUser1Name, newUser2Name]);
     } catch (error) {
       console.error("Error updating user names:", error);
       alert(`Error updating user names: ${error.message}`);
@@ -205,7 +195,7 @@ function App() {
         return;
       }
       try {
-        const { data, error: insertCatError } = await supabase // Renamed 'error'
+        const { data, error: insertCatError } = await supabase
           .from("categories")
           .insert([{ name: newCategoryName }])
           .select();
@@ -213,7 +203,6 @@ function App() {
         if (insertCatError) throw insertCatError;
 
         if (data && data.length > 0) {
-          // Add to local state and keep sorted
           setCategories((prev) => [...prev, data[0].name].sort());
         }
       } catch (error) {
@@ -222,11 +211,31 @@ function App() {
       }
     },
     [categories]
-  ); // categories is a dependency
+  );
 
   const deleteCategory = useCallback(async (categoryNameToDelete) => {
     try {
-      const { error: deleteCatError } = await supabase // Renamed 'error'
+      // 1. Check if any transactions use this category
+      const { count, error: countError } = await supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true }) // Only need the count
+        .eq("category_name", categoryNameToDelete);
+
+      if (countError) {
+        console.error("Error checking transactions for category:", countError);
+        alert(`Error checking category usage: ${countError.message}`);
+        return; // Stop if we can't verify
+      }
+
+      if (count > 0) {
+        alert(
+          `Cannot delete category "${categoryNameToDelete}" because it is currently used by ${count} transaction(s). Please reassign them first.`
+        );
+        return; // Stop deletion
+      }
+
+      // 2. If no transactions use it, proceed with deletion
+      const { error: deleteCatError } = await supabase
         .from("categories")
         .delete()
         .eq("name", categoryNameToDelete);
@@ -236,11 +245,20 @@ function App() {
       setCategories((prev) =>
         prev.filter((cat) => cat !== categoryNameToDelete)
       );
+      alert(`Category "${categoryNameToDelete}" deleted successfully.`);
     } catch (error) {
+      // Catches errors from either count or delete operations if re-thrown
       console.error("Error deleting category:", error);
-      alert(`Error deleting category: ${error.message}`);
+      // Avoid double alerting if countError already alerted.
+      // This generic catch is more for unexpected issues.
+      if (!error.message.startsWith("Error checking category usage")) {
+        alert(`Error deleting category: ${error.message}`);
+      }
     }
-  }, []);
+  }, []); // Removed 'categories' from dependency array as it's not directly used for the check logic,
+  // but rather for updating the state after successful deletion.
+  // If you want to ensure the categories list is "fresh" for the check, you might reconsider,
+  // but the check is against the DB.
 
   const handleSetEditingTransaction = useCallback((transaction) => {
     setEditingTransaction(transaction);
@@ -259,7 +277,6 @@ function App() {
     );
   }
 
-  // Define contextValue before it's used in the return statement
   const contextValue = {
     transactions,
     addTransaction,
