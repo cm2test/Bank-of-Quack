@@ -1,16 +1,16 @@
-// src/main.jsx
+// src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx"; // Our main App component
+import App from "./App"; // Our main App component
 import "./index.css";
 
 // 1. Import necessary things from 'react-router-dom'
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 // 2. Import your page components
-import DashboardPage from "./pages/DashboardPage.jsx";
-import TransactionsPage from "./pages/TransactionsPage.jsx";
-import SettingsPage from "./pages/SettingsPage.jsx";
+import DashboardPage from "./pages/DashboardPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // 3. Define the router configuration
 const router = createBrowserRouter([
@@ -38,7 +38,7 @@ const router = createBrowserRouter([
 ]);
 
 // 4. Provide the router to your application
-ReactDOM.createRoot(document.getElementById("root")).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <RouterProvider router={router} />
   </React.StrictMode>

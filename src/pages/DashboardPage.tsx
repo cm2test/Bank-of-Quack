@@ -1,6 +1,7 @@
 // src/pages/DashboardPage.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, ChangeEvent } from "react";
 import { useOutletContext } from "react-router-dom";
+import { Transaction, Category, Sector } from "../App";
 
 import {
   getFirstDayOfMonth,
@@ -12,24 +13,41 @@ import TotalExpensesWidget from "../components/dashboard/TotalExpensesWidget";
 import CategoryBreakdownWidget from "../components/dashboard/CategoryBreakdownWidget";
 import TransactionList from "../components/TransactionList";
 
-function DashboardPage() {
-  const { transactions, userNames, categories, sectors } = useOutletContext();
+interface DashboardPageContext {
+  transactions: Transaction[];
+  userNames: string[];
+  categories: Category[];
+  sectors: Sector[];
+}
 
-  const [startDate, setStartDate] = useState(
+type TransactionWithExtras = Transaction & {
+  category_name_for_reimbursement_logic?: string;
+  effectiveAmount?: number;
+};
+
+const DashboardPage: React.FC = () => {
+  const { transactions, userNames, categories, sectors } =
+    useOutletContext<DashboardPageContext>();
+
+  const [startDate, setStartDate] = useState<string>(
     formatDateForInput(getFirstDayOfMonth(new Date()))
   );
-  const [endDate, setEndDate] = useState(
+  const [endDate, setEndDate] = useState<string>(
     formatDateForInput(getLastDayOfMonth(new Date()))
   );
-  const [personInvolvementFilter, setPersonInvolvementFilter] = useState({
+  const [personInvolvementFilter, setPersonInvolvementFilter] = useState<{
+    user1: boolean;
+    user2: boolean;
+  }>({
     user1: true,
     user2: true,
   });
-  const [categorySectorFilter, setCategorySectorFilter] = useState("all");
+  const [categorySectorFilter, setCategorySectorFilter] =
+    useState<string>("all");
 
   useEffect(() => {}, [userNames]);
 
-  const handlePersonFilterChange = (event) => {
+  const handlePersonFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target;
     setPersonInvolvementFilter((prevFilter) => ({
       ...prevFilter,
@@ -37,12 +55,14 @@ function DashboardPage() {
     }));
   };
 
-  const handleCategorySectorFilterChange = (event) => {
+  const handleCategorySectorFilterChange = (
+    event: ChangeEvent<HTMLSelectElement>
+  ) => {
     setCategorySectorFilter(event.target.value);
   };
 
   // 1. Filter by Date (Base for all other filters)
-  const transactionsInDateRange = useMemo(() => {
+  const transactionsInDateRange = useMemo<TransactionWithExtras[]>(() => {
     if (!transactions || transactions.length === 0) return [];
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -55,11 +75,11 @@ function DashboardPage() {
         transactionDate >= start &&
         transactionDate <= end
       );
-    });
+    }) as TransactionWithExtras[];
   }, [transactions, startDate, endDate]);
 
   // 2. Pre-process transactions to apply linked reimbursements to expenses
-  const effectiveTransactions = useMemo(() => {
+  const effectiveTransactions = useMemo<TransactionWithExtras[]>(() => {
     if (!transactionsInDateRange) return [];
     const expensesToAdjust = transactionsInDateRange
       .filter((t) => t.transaction_type === "expense")
@@ -89,7 +109,7 @@ function DashboardPage() {
           : t;
       }
       return t;
-    });
+    }) as TransactionWithExtras[];
   }, [transactionsInDateRange]);
 
   // 3. Prepare transactions specifically for Expense Widgets (TotalExpenses, CategoryBreakdown)
@@ -134,7 +154,10 @@ function DashboardPage() {
         }
         return { ...expense, amount: individualAmount };
       })
-      .filter((expense) => expense !== null && expense.amount !== undefined);
+      .filter(
+        (expense): expense is TransactionWithExtras =>
+          expense !== null && expense.amount !== undefined
+      );
   }, [effectiveTransactions, personInvolvementFilter, userNames]);
 
   // 4. Filter by Person Involvement for the general TransactionList display
@@ -185,16 +208,22 @@ function DashboardPage() {
         t.category_name_for_reimbursement_logic || t.category_name;
 
       if (filterType === "cat") {
-        const selectedCategory = categories.find((c) => c.id === filterId);
+        const selectedCategory = categories.find(
+          (c) => c.id === (filterId as string)
+        );
         return selectedCategory && categoryToMatch === selectedCategory.name;
       }
       if (filterType === "sec") {
-        const selectedSector = sectors.find((s) => s.id === filterId);
+        const selectedSector = sectors.find(
+          (s) => s.id === (filterId as string)
+        );
         if (!selectedSector || !selectedSector.category_ids) return false;
         const categoryNamesInSector = selectedSector.category_ids
-          .map((catId) => categories.find((c) => c.id === catId)?.name)
-          .filter((name) => name);
-        return categoryNamesInSector.includes(categoryToMatch);
+          .map((catId: string) => categories.find((c) => c.id === catId)?.name)
+          .filter((name: string | undefined): name is string => !!name);
+        return (
+          categoryToMatch && categoryNamesInSector.includes(categoryToMatch)
+        );
       }
       return true;
     });
@@ -320,6 +349,6 @@ function DashboardPage() {
       </div>
     </div>
   );
-}
+};
 
 export default DashboardPage;

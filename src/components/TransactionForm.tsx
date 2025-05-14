@@ -1,6 +1,26 @@
 // src/components/TransactionForm.jsx
-import React, { useState, useEffect, useMemo } from "react"; // Added useMemo
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  ChangeEvent,
+  FormEvent,
+} from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
+import { Transaction, Category } from "../App";
+
+interface TransactionFormProps {
+  onAddTransaction: (t: Partial<Transaction>) => void;
+}
+
+interface TransactionFormContext {
+  userNames: string[];
+  categories: Category[];
+  transactions: Transaction[];
+  editingTransaction: Transaction | null;
+  updateTransaction: (t: Partial<Transaction>) => void;
+  handleSetEditingTransaction: (t: Transaction | null) => void;
+}
 
 const TRANSACTION_TYPES = [
   { value: "expense", label: "Expense" },
@@ -9,38 +29,39 @@ const TRANSACTION_TYPES = [
   { value: "reimbursement", label: "Reimbursement" },
 ];
 
-function TransactionForm({ onAddTransaction }) {
+const TransactionForm: React.FC<TransactionFormProps> = ({
+  onAddTransaction,
+}) => {
   const {
     userNames,
     categories,
-    transactions, // Need all transactions to list expenses for reimbursement linking
+    transactions,
     editingTransaction,
     updateTransaction,
     handleSetEditingTransaction,
-  } = useOutletContext();
+  } = useOutletContext<TransactionFormContext>();
 
   const navigate = useNavigate();
 
-  const [id, setId] = useState(null);
-  const [transactionType, setTransactionType] = useState(
+  const [id, setId] = useState<string | null>(null);
+  const [transactionType, setTransactionType] = useState<string>(
     TRANSACTION_TYPES[0].value
   );
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  // selectedCategoryId is only for 'expense' type now.
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [paidOrReceivedBy, setPaidOrReceivedBy] = useState("");
-  const [paidToUserName, setPaidToUserName] = useState("");
-  const [splitType, setSplitType] = useState("");
-  // New state for linking reimbursements
+  const [date, setDate] = useState<string>(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [description, setDescription] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [paidOrReceivedBy, setPaidOrReceivedBy] = useState<string>("");
+  const [paidToUserName, setPaidToUserName] = useState<string>("");
+  const [splitType, setSplitType] = useState<string>("");
   const [selectedReimbursesTransactionId, setSelectedReimbursesTransactionId] =
-    useState("");
+    useState<string>("");
 
   const isEditing = !!editingTransaction;
 
-  const getExpenseSplitTypes = (currentUsers) => {
-    /* ... same as before ... */
+  const getExpenseSplitTypes = (currentUsers: string[]) => {
     if (!currentUsers || currentUsers.length < 2)
       return [{ value: "splitEqually", label: "Split Equally" }];
     return [
@@ -49,16 +70,15 @@ function TransactionForm({ onAddTransaction }) {
       { value: "user2_only", label: `For ${currentUsers[1]} Only` },
     ];
   };
-  const [EXPENSE_SPLIT_TYPES, setExpenseSplitTypes] = useState(
-    getExpenseSplitTypes(userNames)
-  );
+  const [EXPENSE_SPLIT_TYPES, setExpenseSplitTypes] = useState<
+    { value: string; label: string }[]
+  >(getExpenseSplitTypes(userNames));
 
-  // Memoize the list of available expenses for reimbursement selection
   const availableExpensesForReimbursement = useMemo(() => {
     if (!transactions) return [];
     return transactions
-      .filter((t) => t.transaction_type === "expense") // Only show expenses
-      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by newest first
+      .filter((t) => t.transaction_type === "expense")
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions]);
 
   useEffect(() => {
@@ -92,16 +112,13 @@ function TransactionForm({ onAddTransaction }) {
         );
         setPaidToUserName("");
       } else if (currentType === "income" || currentType === "reimbursement") {
-        // Category is not used for income/reimbursement
         setSelectedCategoryId("");
         setSplitType("");
         setPaidToUserName("");
       }
     } else {
-      // Initialize for new transaction
       setId(null);
       setDate(new Date().toISOString().slice(0, 10));
-      // Other fields set by type-change effect
       setSelectedReimbursesTransactionId("");
     }
   }, [isEditing, editingTransaction, userNames, categories]);
@@ -111,7 +128,7 @@ function TransactionForm({ onAddTransaction }) {
       setDate(new Date().toISOString().slice(0, 10));
       setAmount("");
       setPaidOrReceivedBy(userNames.length > 0 ? userNames[0] : "");
-      setSelectedReimbursesTransactionId(""); // Reset link on type change for new trans
+      setSelectedReimbursesTransactionId("");
 
       if (transactionType === "expense") {
         setDescription("");
@@ -135,12 +152,12 @@ function TransactionForm({ onAddTransaction }) {
         }
       } else if (transactionType === "income") {
         setDescription("Income");
-        setSelectedCategoryId(""); // No category for income
+        setSelectedCategoryId("");
         setSplitType("");
         setPaidToUserName("");
       } else if (transactionType === "reimbursement") {
-        setDescription("Reimbursement for "); // Prompt user to add more
-        setSelectedCategoryId(""); // No category for reimbursement itself
+        setDescription("Reimbursement for ");
+        setSelectedCategoryId("");
         setSplitType("");
         setPaidToUserName("");
       }
@@ -155,7 +172,6 @@ function TransactionForm({ onAddTransaction }) {
   ]);
 
   useEffect(() => {
-    /* ... payee logic for settlement ... */
     if (transactionType === "settlement" && userNames.length === 2) {
       if (paidOrReceivedBy === userNames[0]) {
         setPaidToUserName(userNames[1]);
@@ -168,7 +184,6 @@ function TransactionForm({ onAddTransaction }) {
   }, [paidOrReceivedBy, transactionType, userNames]);
 
   const resetFormAndState = () => {
-    /* ... same, ensure selectedReimbursesTransactionId is reset ... */
     setId(null);
     setTransactionType("expense");
     setDate(new Date().toISOString().slice(0, 10));
@@ -184,9 +199,8 @@ function TransactionForm({ onAddTransaction }) {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // ... (initial validations for description, amount, paidOrReceivedBy) ...
     if (
       !description ||
       !amount ||
@@ -205,8 +219,8 @@ function TransactionForm({ onAddTransaction }) {
       return;
     }
 
-    let transactionDataPayload = {
-      id,
+    let transactionDataPayload: Partial<Transaction> = {
+      id: id || undefined,
       transaction_type: transactionType,
       date,
       description,
@@ -215,7 +229,7 @@ function TransactionForm({ onAddTransaction }) {
       category_name: null,
       split_type: null,
       paid_to_user_name: null,
-      reimburses_transaction_id: selectedReimbursesTransactionId || null, // Add this
+      reimburses_transaction_id: selectedReimbursesTransactionId || null,
     };
 
     if (transactionType === "expense") {
@@ -239,7 +253,6 @@ function TransactionForm({ onAddTransaction }) {
       }
       transactionDataPayload.split_type = splitType;
     } else if (transactionType === "settlement") {
-      // ... (settlement logic) ...
       if (!paidToUserName) {
         alert("Please select who is being paid for the settlement.");
         return;
@@ -251,12 +264,9 @@ function TransactionForm({ onAddTransaction }) {
       transactionDataPayload.paid_to_user_name = paidToUserName;
       transactionDataPayload.category_name = "Settlement";
     } else if (transactionType === "income") {
-      // No category for income
       transactionDataPayload.category_name = null;
     } else if (transactionType === "reimbursement") {
-      // No category for reimbursement itself
       transactionDataPayload.category_name = null;
-      // reimburses_transaction_id is already in payload
     }
 
     if (isEditing) {
@@ -284,7 +294,6 @@ function TransactionForm({ onAddTransaction }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* ... (Type, Date, Description, Amount, PaidOrReceivedBy, Settlement Payee fields) ... */}
       <h3>
         {isEditing
           ? `Edit ${editingTransaction?.transaction_type || "Transaction"}`
@@ -297,7 +306,9 @@ function TransactionForm({ onAddTransaction }) {
         <select
           id="transactionType"
           value={transactionType}
-          onChange={(e) => setTransactionType(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+            setTransactionType(e.target.value)
+          }
           disabled={isEditing}
         >
           {TRANSACTION_TYPES.map((type) => (
@@ -313,7 +324,9 @@ function TransactionForm({ onAddTransaction }) {
           type="date"
           id="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setDate(e.target.value)
+          }
           required
         />
       </div>
@@ -323,7 +336,9 @@ function TransactionForm({ onAddTransaction }) {
           type="text"
           id="description"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setDescription(e.target.value)
+          }
           required
         />
       </div>
@@ -333,7 +348,9 @@ function TransactionForm({ onAddTransaction }) {
           type="number"
           id="amount"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setAmount(e.target.value)
+          }
           min="0.01"
           step="0.01"
           required
@@ -344,7 +361,9 @@ function TransactionForm({ onAddTransaction }) {
         <select
           id="paidOrReceivedBy"
           value={paidOrReceivedBy}
-          onChange={(e) => setPaidOrReceivedBy(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+            setPaidOrReceivedBy(e.target.value)
+          }
           required
         >
           <option value="">-- Select User --</option>
@@ -355,13 +374,15 @@ function TransactionForm({ onAddTransaction }) {
           ))}
         </select>
       </div>
-      {transactionType === "settlement" /* ... Payee dropdown ... */ && (
+      {transactionType === "settlement" && (
         <div>
           <label htmlFor="paidToUserName">Payee:</label>
           <select
             id="paidToUserName"
             value={paidToUserName}
-            onChange={(e) => setPaidToUserName(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setPaidToUserName(e.target.value)
+            }
             required
           >
             <option value="">-- Select User --</option>
@@ -374,14 +395,15 @@ function TransactionForm({ onAddTransaction }) {
         </div>
       )}
 
-      {/* Category: Only for 'expense' type now */}
       {transactionType === "expense" && (
         <div>
           <label htmlFor="category">Category:</label>
           <select
             id="category"
             value={selectedCategoryId}
-            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setSelectedCategoryId(e.target.value)
+            }
             required
           >
             <option value="">-- Select a Category --</option>
@@ -394,7 +416,6 @@ function TransactionForm({ onAddTransaction }) {
         </div>
       )}
 
-      {/* Link to original expense for Reimbursement */}
       {transactionType === "reimbursement" && (
         <div>
           <label htmlFor="reimbursesTransaction">
@@ -403,7 +424,9 @@ function TransactionForm({ onAddTransaction }) {
           <select
             id="reimbursesTransaction"
             value={selectedReimbursesTransactionId}
-            onChange={(e) => setSelectedReimbursesTransactionId(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setSelectedReimbursesTransactionId(e.target.value)
+            }
           >
             <option value="">-- None (General Reimbursement) --</option>
             {availableExpensesForReimbursement.map((exp) => (
@@ -415,14 +438,15 @@ function TransactionForm({ onAddTransaction }) {
         </div>
       )}
 
-      {/* Split Type: Only for 'expense' */}
-      {transactionType === "expense" /* ... Split Type dropdown ... */ && (
+      {transactionType === "expense" && (
         <div>
           <label htmlFor="splitType">Split Type:</label>
           <select
             id="splitType"
             value={splitType}
-            onChange={(e) => setSplitType(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setSplitType(e.target.value)
+            }
             required
           >
             {EXPENSE_SPLIT_TYPES.map((type) => (
@@ -437,7 +461,7 @@ function TransactionForm({ onAddTransaction }) {
       <button type="submit" style={{ marginTop: "10px" }}>
         {isEditing ? "Update Transaction" : "Add Transaction"}
       </button>
-      {isEditing /* ... Cancel Edit button ... */ && (
+      {isEditing && (
         <button
           type="button"
           onClick={handleCancelEdit}
@@ -448,6 +472,6 @@ function TransactionForm({ onAddTransaction }) {
       )}
     </form>
   );
-}
+};
 
 export default TransactionForm;

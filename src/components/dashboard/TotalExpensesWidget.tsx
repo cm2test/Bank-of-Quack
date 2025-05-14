@@ -1,7 +1,14 @@
-// src/components/dashboard/TotalExpensesWidget.jsx
+// src/components/dashboard/TotalExpensesWidget.tsx
 import React, { useMemo } from "react";
+import { Transaction } from "../../App";
 
-function TotalExpensesWidget({ transactionsInDateRange }) {
+interface TotalExpensesWidgetProps {
+  transactionsInDateRange: Transaction[];
+}
+
+const TotalExpensesWidget: React.FC<TotalExpensesWidgetProps> = ({
+  transactionsInDateRange,
+}) => {
   // This prop is now 'expensesForWidgets' from DashboardPage
   const totalNetExpenses = useMemo(() => {
     if (!transactionsInDateRange) return 0;
@@ -18,6 +25,6 @@ function TotalExpensesWidget({ transactionsInDateRange }) {
       <p>${totalNetExpenses.toFixed(2)}</p>
     </div>
   );
-}
+};
 
 export default TotalExpensesWidget;

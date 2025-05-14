@@ -1,4 +1,5 @@
-// src/supabaseClient.js
+/// <reference types="vite/client" />
+// src/supabaseClient.ts
 import { createClient } from "@supabase/supabase-js";
 
 // Get Supabase URL and anon key from environment variables

@@ -1,34 +1,42 @@
 // src/pages/SettingsPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useOutletContext } from "react-router-dom";
+import { Category, Sector } from "../App";
 
-function SettingsPage() {
+interface SettingsPageContext {
+  userNames: string[];
+  updateUserNames: (n1: string, n2: string) => void;
+  categories: Category[];
+  addCategory: (name: string) => void;
+  deleteCategory: (cat: Category) => void;
+  sectors: Sector[];
+  addSector: (name: string) => Promise<Sector | null>;
+  deleteSector: (id: string) => void;
+  addCategoryToSector: (sectorId: string, categoryId: string) => void;
+  removeCategoryFromSector: (sectorId: string, categoryId: string) => void;
+}
+
+const SettingsPage: React.FC = () => {
   const {
     userNames,
     updateUserNames,
-    categories, // Now an array of objects: [{ id, name }, ...]
+    categories,
     addCategory,
     deleteCategory,
-    sectors, // Array of objects: [{ id, name, category_ids: [] }, ...]
+    sectors,
     addSector,
     deleteSector,
     addCategoryToSector,
     removeCategoryFromSector,
-  } = useOutletContext();
+  } = useOutletContext<SettingsPageContext>();
 
-  // Local state for User Names form
-  const [user1NameInput, setUser1NameInput] = useState("");
-  const [user2NameInput, setUser2NameInput] = useState("");
-
-  // Local state for Categories form
-  const [newCategoryInput, setNewCategoryInput] = useState("");
-
-  // Local state for Sectors form
-  const [newSectorInput, setNewSectorInput] = useState("");
+  const [user1NameInput, setUser1NameInput] = useState<string>("");
+  const [user2NameInput, setUser2NameInput] = useState<string>("");
+  const [newCategoryInput, setNewCategoryInput] = useState<string>("");
+  const [newSectorInput, setNewSectorInput] = useState<string>("");
   const [selectedCategoryForSector, setSelectedCategoryForSector] =
-    useState(""); // Stores category ID
+    useState<string>("");
 
-  // Effect to initialize user name inputs when userNames context updates
   useEffect(() => {
     if (userNames && userNames.length >= 2) {
       setUser1NameInput(userNames[0]);
@@ -36,7 +44,7 @@ function SettingsPage() {
     }
   }, [userNames]);
 
-  const handleUserNamesSave = (e) => {
+  const handleUserNamesSave = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (user1NameInput.trim() && user2NameInput.trim()) {
       updateUserNames(user1NameInput.trim(), user2NameInput.trim());
@@ -46,37 +54,35 @@ function SettingsPage() {
     }
   };
 
-  const handleAddCategory = (e) => {
+  const handleAddCategory = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newCategoryInput.trim()) {
-      addCategory(newCategoryInput.trim()); // addCategory in App.jsx handles if it exists
+      addCategory(newCategoryInput.trim());
       setNewCategoryInput("");
     }
   };
 
-  const handleDeleteCategory = (category) => {
-    // category is now an object {id, name}
+  const handleDeleteCategory = (category: Category) => {
     if (
       window.confirm(
         `Are you sure you want to delete the category "${category.name}"? This will also remove it from any sectors.`
       )
     ) {
-      deleteCategory(category); // deleteCategory in App.jsx handles checking transactions
+      deleteCategory(category);
     }
   };
 
-  const handleAddSector = async (e) => {
+  const handleAddSector = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newSectorInput.trim()) {
-      const newSector = await addSector(newSectorInput.trim()); // addSector now returns the new sector or null
+      const newSector = await addSector(newSectorInput.trim());
       if (newSector) {
         setNewSectorInput("");
-        // Optionally, auto-select this new sector for category assignment or scroll to it
       }
     }
   };
 
-  const handleDeleteSector = (sector) => {
+  const handleDeleteSector = (sector: Sector) => {
     if (
       window.confirm(
         `Are you sure you want to delete the sector "${sector.name}"? All category associations for this sector will be removed.`
@@ -86,11 +92,14 @@ function SettingsPage() {
     }
   };
 
-  const handleAddCategoryToSectorSubmit = (e, sectorId) => {
+  const handleAddCategoryToSectorSubmit = (
+    e: FormEvent<HTMLFormElement>,
+    sectorId: string
+  ) => {
     e.preventDefault();
     if (sectorId && selectedCategoryForSector) {
       addCategoryToSector(sectorId, selectedCategoryForSector);
-      setSelectedCategoryForSector(""); // Reset dropdown for this form
+      setSelectedCategoryForSector("");
     } else {
       alert("Please select a category to add.");
     }
@@ -236,7 +245,7 @@ function SettingsPage() {
               <h5>Categories in this Sector:</h5>
               {sector.category_ids && sector.category_ids.length > 0 ? (
                 <ul style={{ listStyleType: "disc", paddingLeft: "20px" }}>
-                  {sector.category_ids.map((catId) => {
+                  {sector.category_ids.map((catId: string) => {
                     const category = categories.find((c) => c.id === catId);
                     return (
                       <li
@@ -310,6 +319,6 @@ function SettingsPage() {
       </section>
     </div>
   );
-}
+};
 
 export default SettingsPage;

@@ -1,12 +1,17 @@
-// src/pages/TransactionsPage.jsx
+// src/pages/TransactionsPage.tsx
 import React from "react"; // Added React import for clarity, though often implicit
 import { useOutletContext } from "react-router-dom";
 import TransactionForm from "../components/TransactionForm";
+import { Transaction } from "../App";
 
-function TransactionsPage() {
+interface TransactionsPageContext {
+  addTransaction: (t: Partial<Transaction>) => void;
+}
+
+const TransactionsPage: React.FC = () => {
   // addTransaction is used by TransactionForm when NOT editing.
   // editingTransaction, updateTransaction are handled internally by TransactionForm via context.
-  const { addTransaction } = useOutletContext();
+  const { addTransaction } = useOutletContext<TransactionsPageContext>();
 
   return (
     <div>
@@ -15,6 +20,6 @@ function TransactionsPage() {
       <TransactionForm onAddTransaction={addTransaction} />
     </div>
   );
-}
+};
 
 export default TransactionsPage;

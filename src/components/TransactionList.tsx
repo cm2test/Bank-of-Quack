@@ -1,19 +1,29 @@
 // src/components/TransactionList.jsx
 import React from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
+import { Transaction } from "../App";
 
-function TransactionList({ transactions }) {
-  // `transactions` here is the already filtered list from DashboardPage
+interface TransactionListProps {
+  transactions: Transaction[];
+}
+
+interface TransactionListContext {
+  userNames: string[];
+  deleteTransaction: (id: string) => void;
+  handleSetEditingTransaction: (t: Transaction) => void;
+  transactions: Transaction[];
+}
+
+const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
   const {
     userNames,
     deleteTransaction,
     handleSetEditingTransaction,
     transactions: allTransactions,
-  } = useOutletContext(); // Get allTransactions for lookup
+  } = useOutletContext<TransactionListContext>();
   const navigate = useNavigate();
 
-  const getSplitTypeLabel = (splitTypeParam) => {
-    /* ... same as before ... */
+  const getSplitTypeLabel = (splitTypeParam: string) => {
     if (!userNames || userNames.length < 2) {
       switch (splitTypeParam) {
         case "splitEqually":
@@ -38,13 +48,11 @@ function TransactionList({ transactions }) {
     }
   };
 
-  const onEdit = (transaction) => {
-    /* ... same as before ... */
+  const onEdit = (transaction: Transaction) => {
     handleSetEditingTransaction(transaction);
     navigate("/transactions");
   };
-  const onDelete = (transactionId) => {
-    /* ... same as before ... */
+  const onDelete = (transactionId: string) => {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
       deleteTransaction(transactionId);
     }
@@ -55,7 +63,7 @@ function TransactionList({ transactions }) {
   }
 
   const sortedTransactions = [...transactions].sort(
-    (a, b) => new Date(b.date) - new Date(a.date)
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   return (
@@ -101,16 +109,16 @@ function TransactionList({ transactions }) {
               <small>Date: {t.date}</small>
               <br />
 
-              {type === "expense" /* ... expense details ... */ && (
+              {type === "expense" && (
                 <>
                   <small>Category: {t.category_name || "N/A"}</small>
                   <br />
                   <small>Paid by: {t.paid_by_user_name || "N/A"}</small>
                   <br />
-                  <small>Split: {getSplitTypeLabel(t.split_type)}</small>
+                  <small>Split: {getSplitTypeLabel(t.split_type || "")}</small>
                 </>
               )}
-              {type === "settlement" /* ... settlement details ... */ && (
+              {type === "settlement" && (
                 <>
                   <small>Payer: {t.paid_by_user_name || "N/A"}</small>
                   <br />
@@ -119,7 +127,6 @@ function TransactionList({ transactions }) {
               )}
               {(type === "income" || type === "reimbursement") && (
                 <>
-                  {/* Category is N/A for these types now */}
                   <small>Category: N/A</small>
                   <br />
                   <small>Received by: {t.paid_by_user_name || "N/A"}</small>
@@ -148,6 +155,6 @@ function TransactionList({ transactions }) {
       </ul>
     </div>
   );
-}
+};
 
 export default TransactionList;

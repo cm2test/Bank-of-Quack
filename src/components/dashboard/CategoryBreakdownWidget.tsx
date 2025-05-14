@@ -1,7 +1,14 @@
-// src/components/dashboard/CategoryBreakdownWidget.jsx
+// src/components/dashboard/CategoryBreakdownWidget.tsx
 import React, { useMemo } from "react";
+import { Transaction } from "../../App";
 
-function CategoryBreakdownWidget({ transactionsInDateRange }) {
+interface CategoryBreakdownWidgetProps {
+  transactionsInDateRange: Transaction[];
+}
+
+const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
+  transactionsInDateRange,
+}) => {
   // This prop is now 'expensesForWidgets' from DashboardPage
   const categoryBreakdown = useMemo(() => {
     if (!transactionsInDateRange) return [];
@@ -11,17 +18,18 @@ function CategoryBreakdownWidget({ transactionsInDateRange }) {
     // 2. Amounts are net of linked reimbursements.
     // 3. Amounts are adjusted (e.g., halved) if a single person filter is active.
 
-    const netCategoryAmounts = transactionsInDateRange.reduce((acc, t) => {
-      // Use the original category name (before any reimbursement linking might have altered it for display)
-      const category =
-        t.category_name_for_reimbursement_logic ||
-        t.category_name ||
-        "Uncategorized";
-      const amount = t.amount || 0; // This is the final amount for this user's view
+    const netCategoryAmounts: Record<string, number> =
+      transactionsInDateRange.reduce((acc, t) => {
+        // Use the original category name (before any reimbursement linking might have altered it for display)
+        const category =
+          (t as any).category_name_for_reimbursement_logic ||
+          t.category_name ||
+          "Uncategorized";
+        const amount = t.amount || 0; // This is the final amount for this user's view
 
-      acc[category] = (acc[category] || 0) + amount;
-      return acc;
-    }, {});
+        acc[category] = (acc[category] || 0) + amount;
+        return acc;
+      }, {} as Record<string, number>);
 
     const totalNetDisplayExpenses = Object.values(netCategoryAmounts).reduce(
       (sum, amount) => sum + amount,
@@ -63,6 +71,6 @@ function CategoryBreakdownWidget({ transactionsInDateRange }) {
       )}
     </div>
   );
-}
+};
 
 export default CategoryBreakdownWidget;

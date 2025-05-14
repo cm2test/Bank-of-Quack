@@ -5,7 +5,7 @@
  * @param {Date} date - The input date.
  * @returns {Date} - The first day of the month.
  */
-export const getFirstDayOfMonth = (date) => {
+export const getFirstDayOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 };
 
@@ -14,7 +14,7 @@ export const getFirstDayOfMonth = (date) => {
  * @param {Date} date - The input date.
  * @returns {Date} - The last day of the month.
  */
-export const getLastDayOfMonth = (date) => {
+export const getLastDayOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0);
 };
 
@@ -23,8 +23,8 @@ export const getLastDayOfMonth = (date) => {
  * @param {Date} date - The input date.
  * @returns {string} - The formatted date string.
  */
-export const formatDateForInput = (date) => {
-  if (!(date instanceof Date) || isNaN(date)) {
+export const formatDateForInput = (date: Date): string => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
     // Handle invalid date input, perhaps return today's date or throw an error
     console.warn(
       "formatDateForInput received an invalid date. Defaulting to current date."

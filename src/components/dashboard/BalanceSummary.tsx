@@ -1,9 +1,20 @@
 // src/components/dashboard/BalanceSummary.jsx
 import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
+import { Transaction } from "../../App";
 
-function BalanceSummary({ transactionsInDateRange }) {
-  const { userNames } = useOutletContext();
+interface BalanceSummaryProps {
+  transactionsInDateRange: Transaction[];
+}
+
+interface BalanceSummaryContext {
+  userNames: string[];
+}
+
+const BalanceSummary: React.FC<BalanceSummaryProps> = ({
+  transactionsInDateRange,
+}) => {
+  const { userNames } = useOutletContext<BalanceSummaryContext>();
 
   const balanceSummary = useMemo(() => {
     if (!userNames || userNames.length < 2 || !transactionsInDateRange)
@@ -68,6 +79,6 @@ function BalanceSummary({ transactionsInDateRange }) {
       <p>{renderBalanceMessage()}</p>
     </div>
   );
-}
+};
 
 export default BalanceSummary;
