@@ -3,18 +3,16 @@ import React, { useState, useEffect } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 
 function TransactionForm({ onAddTransaction }) {
-  // onAddTransaction is still passed for new transactions
   const {
     userNames,
-    categories,
-    editingTransaction, // Get the transaction being edited
-    updateTransaction, // Get the update function
-    handleSetEditingTransaction, // To clear editing state on cancel or successful add
+    categories, // Array of objects: [{ id, name }, ...]
+    editingTransaction,
+    updateTransaction,
+    handleSetEditingTransaction,
   } = useOutletContext();
 
   const navigate = useNavigate();
 
-  // Dynamically create SPLIT_TYPES based on userNames
   const getSplitTypes = (currentUsers) => [
     { value: "splitEqually", label: "Split Equally" },
     {
@@ -35,71 +33,87 @@ function TransactionForm({ onAddTransaction }) {
 
   const [SPLIT_TYPES, setSPLIT_TYPES] = useState(getSplitTypes(userNames));
 
-  const [id, setId] = useState(null); // To store ID when editing
+  // Form state
+  const [id, setId] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(
-    categories.length > 0 ? categories[0] : ""
-  );
-  const [paidBy, setPaidBy] = useState(
-    userNames.length > 0 ? userNames[0] : ""
-  );
+  // category state should store the ID of the selected category
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [paidBy, setPaidBy] = useState(""); // Will be initialized by useEffect
   const [splitType, setSplitType] = useState(
     SPLIT_TYPES[0]?.value || "splitEqually"
   );
 
-  const isEditing = !!editingTransaction; // True if editingTransaction is not null
+  const isEditing = !!editingTransaction;
 
   useEffect(() => {
     // Update SPLIT_TYPES if userNames change
     setSPLIT_TYPES(getSplitTypes(userNames));
 
-    // If userNames or categories change, update default selections if current ones are invalid
+    // Initialize paidBy
     if (userNames.length > 0 && !userNames.includes(paidBy)) {
       setPaidBy(userNames[0]);
     } else if (userNames.length === 0 && paidBy !== "") {
       setPaidBy("");
     }
 
-    if (categories.length > 0 && !categories.includes(category)) {
-      setCategory(categories[0]);
-    } else if (categories.length === 0 && category !== "") {
-      setCategory("");
+    // Initialize selectedCategoryId
+    if (categories.length > 0 && !selectedCategoryId) {
+      // If not editing and no category selected yet, default to first category's ID
+      if (!isEditing) {
+        setSelectedCategoryId(categories[0].id);
+      }
+    } else if (categories.length === 0 && selectedCategoryId !== "") {
+      setSelectedCategoryId("");
     }
-  }, [userNames, categories, paidBy, category]); // Rerun when these change
+  }, [userNames, categories, paidBy, selectedCategoryId, isEditing]);
 
   useEffect(() => {
-    if (isEditing) {
-      // Populate form with editingTransaction data
+    if (isEditing && editingTransaction) {
       setId(editingTransaction.id);
       setDate(editingTransaction.date);
       setDescription(editingTransaction.description);
-      setAmount(editingTransaction.amount.toString()); // Amount is number, input expects string
-      setCategory(editingTransaction.category);
-      setPaidBy(editingTransaction.paidBy);
-      setSplitType(editingTransaction.splitType);
+      setAmount(editingTransaction.amount.toString());
+      setPaidBy(editingTransaction.paid_by_user_name); // Use DB field name
+      setSplitType(editingTransaction.split_type); // Use DB field name
+
+      // Find the ID of the category whose name matches editingTransaction.category_name
+      const categoryToEdit = categories.find(
+        (c) => c.name === editingTransaction.category_name
+      );
+      setSelectedCategoryId(
+        categoryToEdit
+          ? categoryToEdit.id
+          : categories.length > 0
+          ? categories[0].id
+          : ""
+      );
     } else {
-      // Reset form for new transaction (or if editingTransaction becomes null)
+      // Reset form for new transaction
       setId(null);
       setDate(new Date().toISOString().slice(0, 10));
       setDescription("");
       setAmount("");
-      setCategory(categories.length > 0 ? categories[0] : "");
+      setSelectedCategoryId(categories.length > 0 ? categories[0].id : "");
       setPaidBy(userNames.length > 0 ? userNames[0] : "");
       setSplitType(getSplitTypes(userNames)[0]?.value || "splitEqually");
     }
-  }, [isEditing, editingTransaction, categories, userNames]); // Rerun when editing state changes
+  }, [isEditing, editingTransaction, categories, userNames]); // Rerun when editing state or dependent data changes
 
   const resetFormAndState = () => {
+    // ... (reset logic from previous version, ensure selectedCategoryId is reset correctly)
     setId(null);
     setDate(new Date().toISOString().slice(0, 10));
     setDescription("");
     setAmount("");
-    setCategory(categories.length > 0 ? categories[0] : "");
+    setSelectedCategoryId(categories.length > 0 ? categories[0].id : "");
     setPaidBy(userNames.length > 0 ? userNames[0] : "");
     setSplitType(getSplitTypes(userNames)[0]?.value || "splitEqually");
-    handleSetEditingTransaction(null); // Clear the editing state in App.jsx
+    if (handleSetEditingTransaction) {
+      // Check if function exists before calling
+      handleSetEditingTransaction(null);
+    }
   };
 
   const handleSubmit = (event) => {
@@ -115,25 +129,35 @@ function TransactionForm({ onAddTransaction }) {
       return;
     }
     if (!paidBy) {
-      alert(
-        "Please select who paid. Configure users in Settings if the list is empty."
-      );
+      alert("Please select who paid.");
       return;
     }
-    if (!category) {
-      alert(
-        "Please select a category. Configure categories in Settings if the list is empty."
-      );
+    if (!selectedCategoryId) {
+      // Check selectedCategoryId
+      alert("Please select a category.");
+      return;
+    }
+
+    // Find the name of the selected category using its ID
+    const selectedCategoryObject = categories.find(
+      (c) => c.id === selectedCategoryId
+    );
+    const categoryNameForSubmission = selectedCategoryObject
+      ? selectedCategoryObject.name
+      : null;
+
+    if (!categoryNameForSubmission) {
+      alert("Selected category is invalid. Please try again.");
       return;
     }
 
     const transactionData = {
-      id, // Will be null for new transactions, or the existing ID for updates
+      id,
       date,
       description,
       amount: parseFloat(amount),
-      category,
-      paidBy,
+      category: categoryNameForSubmission, // Submit category NAME as App.jsx expects
+      paidBy, // This is already a user name string
       splitType,
     };
 
@@ -141,16 +165,16 @@ function TransactionForm({ onAddTransaction }) {
       updateTransaction(transactionData);
       alert("Transaction updated!");
     } else {
-      onAddTransaction(transactionData); // onAddTransaction is from TransactionsPage
+      onAddTransaction(transactionData);
       alert("Transaction added!");
     }
     resetFormAndState();
-    navigate("/"); // Navigate to dashboard after add/update
+    navigate("/");
   };
 
   const handleCancelEdit = () => {
     resetFormAndState();
-    navigate("/"); // Or wherever you want to go after cancelling edit
+    navigate("/");
   };
 
   return (
@@ -192,18 +216,22 @@ function TransactionForm({ onAddTransaction }) {
         <label htmlFor="category">Category:</label>
         <select
           id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={selectedCategoryId} /* Use selectedCategoryId for value */
+          onChange={(e) => setSelectedCategoryId(e.target.value)}
           required
         >
-          {categories.length === 0 && (
-            <option value="">Please add categories in Settings</option>
-          )}
+          <option value="">-- Select a Category --</option>{" "}
+          {/* Added a default empty option */}
           {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
             </option>
           ))}
+          {categories.length === 0 && (
+            <option value="" disabled>
+              Please add categories in Settings
+            </option>
+          )}
         </select>
       </div>
       <div>
@@ -214,14 +242,18 @@ function TransactionForm({ onAddTransaction }) {
           onChange={(e) => setPaidBy(e.target.value)}
           required
         >
-          {userNames.length === 0 && (
-            <option value="">Please add users in Settings</option>
-          )}
+          <option value="">-- Select User --</option>{" "}
+          {/* Added a default empty option */}
           {userNames.map((user) => (
             <option key={user} value={user}>
               {user}
             </option>
           ))}
+          {userNames.length === 0 && (
+            <option value="" disabled>
+              Please add users in Settings
+            </option>
+          )}
         </select>
       </div>
       <div>
