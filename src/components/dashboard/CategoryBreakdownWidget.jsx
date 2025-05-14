@@ -3,12 +3,15 @@ import React, { useMemo } from "react";
 
 function CategoryBreakdownWidget({ transactionsInDateRange, totalExpenses }) {
   const categoryBreakdown = useMemo(() => {
+    if (!transactionsInDateRange) return [];
     const breakdown = {};
     transactionsInDateRange.forEach((t) => {
-      if (breakdown[t.category]) {
-        breakdown[t.category] += t.amount;
+      // Use database column name: category_name
+      const category = t.category_name || "Uncategorized"; // Fallback for safety
+      if (breakdown[category]) {
+        breakdown[category] += t.amount;
       } else {
-        breakdown[t.category] = t.amount;
+        breakdown[category] = t.amount;
       }
     });
 

@@ -3,21 +3,30 @@ import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
 function BalanceSummary({ transactionsInDateRange }) {
-  const { userNames } = useOutletContext();
+  const { userNames } = useOutletContext(); // userNames are crucial here
 
   const balanceSummary = useMemo(() => {
-    if (!userNames || userNames.length < 2) return 0;
+    if (!userNames || userNames.length < 2 || !transactionsInDateRange)
+      return 0; // Guard clauses
+
     const [user1, user2] = userNames;
-    let netBalanceUser1 = 0;
+    let netBalanceUser1 = 0; // Positive: user2 owes user1. Negative: user1 owes user2.
 
     transactionsInDateRange.forEach((t) => {
       const amount = t.amount;
-      if (t.paidBy === user1) {
-        if (t.splitType === "splitEqually") netBalanceUser1 += amount / 2;
-        else if (t.splitType === "user2_only") netBalanceUser1 += amount;
-      } else if (t.paidBy === user2) {
-        if (t.splitType === "splitEqually") netBalanceUser1 -= amount / 2;
-        else if (t.splitType === "user1_only") netBalanceUser1 -= amount;
+      // Use database column names: paid_by_user_name and split_type
+      if (t.paid_by_user_name === user1) {
+        if (t.split_type === "splitEqually") {
+          netBalanceUser1 += amount / 2;
+        } else if (t.split_type === "user2_only") {
+          netBalanceUser1 += amount;
+        }
+      } else if (t.paid_by_user_name === user2) {
+        if (t.split_type === "splitEqually") {
+          netBalanceUser1 -= amount / 2;
+        } else if (t.split_type === "user1_only") {
+          netBalanceUser1 -= amount;
+        }
       }
     });
     return netBalanceUser1;
