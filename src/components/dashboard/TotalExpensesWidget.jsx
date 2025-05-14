@@ -2,8 +2,11 @@
 import React, { useMemo } from "react";
 
 function TotalExpensesWidget({ transactionsInDateRange }) {
-  const totalExpenses = useMemo(() => {
-    return transactionsInDateRange.reduce((sum, t) => sum + t.amount, 0);
+  // This prop is now 'expensesForWidgets' from DashboardPage
+  const totalNetExpenses = useMemo(() => {
+    if (!transactionsInDateRange) return 0;
+    // The incoming list is already filtered for expenses and amounts are adjusted for person filter
+    return transactionsInDateRange.reduce((sum, t) => sum + (t.amount || 0), 0);
   }, [transactionsInDateRange]);
 
   return (
@@ -11,8 +14,8 @@ function TotalExpensesWidget({ transactionsInDateRange }) {
       id="totalExpensesSection"
       style={{ padding: "10px", border: "1px solid #ccc", margin: "10px 0" }}
     >
-      <h3>Total Combined Expenses</h3>
-      <p>${totalExpenses.toFixed(2)}</p>
+      <h3>Total Expenses</h3> {/* Can revert title if "Net" is confusing now */}
+      <p>${totalNetExpenses.toFixed(2)}</p>
     </div>
   );
 }

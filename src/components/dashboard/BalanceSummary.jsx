@@ -3,33 +3,46 @@ import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
 function BalanceSummary({ transactionsInDateRange }) {
-  const { userNames } = useOutletContext(); // userNames are crucial here
+  const { userNames } = useOutletContext();
 
   const balanceSummary = useMemo(() => {
     if (!userNames || userNames.length < 2 || !transactionsInDateRange)
-      return 0; // Guard clauses
+      return 0;
 
     const [user1, user2] = userNames;
-    let netBalanceUser1 = 0; // Positive: user2 owes user1. Negative: user1 owes user2.
+    let netBalanceUser1OwesUser2 = 0; // Positive: user1 owes user2. Negative: user2 owes user1.
 
     transactionsInDateRange.forEach((t) => {
       const amount = t.amount;
-      // Use database column names: paid_by_user_name and split_type
-      if (t.paid_by_user_name === user1) {
-        if (t.split_type === "splitEqually") {
-          netBalanceUser1 += amount / 2;
-        } else if (t.split_type === "user2_only") {
-          netBalanceUser1 += amount;
+      const type = t.transaction_type || "expense"; // Default to 'expense' if undefined
+
+      if (type === "expense") {
+        if (t.paid_by_user_name === user1) {
+          if (t.split_type === "splitEqually") {
+            netBalanceUser1OwesUser2 -= amount / 2;
+          } else if (t.split_type === "user2_only") {
+            netBalanceUser1OwesUser2 -= amount;
+          }
+        } else if (t.paid_by_user_name === user2) {
+          if (t.split_type === "splitEqually") {
+            netBalanceUser1OwesUser2 += amount / 2;
+          } else if (t.split_type === "user1_only") {
+            netBalanceUser1OwesUser2 += amount;
+          }
         }
-      } else if (t.paid_by_user_name === user2) {
-        if (t.split_type === "splitEqually") {
-          netBalanceUser1 -= amount / 2;
-        } else if (t.split_type === "user1_only") {
-          netBalanceUser1 -= amount;
+      } else if (type === "settlement") {
+        if (t.paid_by_user_name === user1 && t.paid_to_user_name === user2) {
+          netBalanceUser1OwesUser2 -= amount;
+        } else if (
+          t.paid_by_user_name === user2 &&
+          t.paid_to_user_name === user1
+        ) {
+          netBalanceUser1OwesUser2 += amount;
         }
       }
+      // 'income' and 'reimbursement' types are ignored for this balance calculation
     });
-    return netBalanceUser1;
+    return netBalanceUser1OwesUser2;
   }, [transactionsInDateRange, userNames]);
 
   const renderBalanceMessage = () => {
@@ -40,9 +53,9 @@ function BalanceSummary({ transactionsInDateRange }) {
     if (balanceSummary === 0) {
       return `${user1} and ${user2} are all square!`;
     } else if (balanceSummary > 0) {
-      return `${user2} owes ${user1} $${balanceSummary.toFixed(2)}.`;
+      return `${user1} owes ${user2} $${balanceSummary.toFixed(2)}.`;
     } else {
-      return `${user1} owes ${user2} $${Math.abs(balanceSummary).toFixed(2)}.`;
+      return `${user2} owes ${user1} $${Math.abs(balanceSummary).toFixed(2)}.`;
     }
   };
 

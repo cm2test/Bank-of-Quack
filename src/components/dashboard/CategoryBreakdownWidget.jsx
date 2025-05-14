@@ -1,28 +1,44 @@
 // src/components/dashboard/CategoryBreakdownWidget.jsx
 import React, { useMemo } from "react";
 
-function CategoryBreakdownWidget({ transactionsInDateRange, totalExpenses }) {
+function CategoryBreakdownWidget({ transactionsInDateRange }) {
+  // This prop is now 'expensesForWidgets' from DashboardPage
   const categoryBreakdown = useMemo(() => {
     if (!transactionsInDateRange) return [];
-    const breakdown = {};
-    transactionsInDateRange.forEach((t) => {
-      // Use database column name: category_name
-      const category = t.category_name || "Uncategorized"; // Fallback for safety
-      if (breakdown[category]) {
-        breakdown[category] += t.amount;
-      } else {
-        breakdown[category] = t.amount;
-      }
-    });
 
-    return Object.entries(breakdown)
+    // The incoming list (expensesForWidgets) is already:
+    // 1. Filtered for transaction_type === 'expense'.
+    // 2. Amounts are net of linked reimbursements.
+    // 3. Amounts are adjusted (e.g., halved) if a single person filter is active.
+
+    const netCategoryAmounts = transactionsInDateRange.reduce((acc, t) => {
+      // Use the original category name (before any reimbursement linking might have altered it for display)
+      const category =
+        t.category_name_for_reimbursement_logic ||
+        t.category_name ||
+        "Uncategorized";
+      const amount = t.amount || 0; // This is the final amount for this user's view
+
+      acc[category] = (acc[category] || 0) + amount;
+      return acc;
+    }, {});
+
+    const totalNetDisplayExpenses = Object.values(netCategoryAmounts).reduce(
+      (sum, amount) => sum + amount,
+      0
+    );
+
+    return Object.entries(netCategoryAmounts)
       .map(([category, amount]) => ({
         category,
         amount,
-        percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0,
+        percentage:
+          totalNetDisplayExpenses > 0
+            ? (amount / totalNetDisplayExpenses) * 100
+            : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [transactionsInDateRange, totalExpenses]);
+  }, [transactionsInDateRange]);
 
   return (
     <div
@@ -34,12 +50,15 @@ function CategoryBreakdownWidget({ transactionsInDateRange, totalExpenses }) {
         <p>No expenses in this period to categorize.</p>
       ) : (
         <ul style={{ listStyleType: "none", padding: 0 }}>
-          {categoryBreakdown.map((item) => (
-            <li key={item.category} style={{ marginBottom: "5px" }}>
-              {item.category}: ${item.amount.toFixed(2)} (
-              {item.percentage.toFixed(1)}%)
-            </li>
-          ))}
+          {categoryBreakdown.map(
+            (item) =>
+              item.amount !== 0 && (
+                <li key={item.category} style={{ marginBottom: "5px" }}>
+                  {item.category}: ${item.amount.toFixed(2)}
+                  {item.percentage !== 0 && ` (${item.percentage.toFixed(1)}%)`}
+                </li>
+              )
+          )}
         </ul>
       )}
     </div>

@@ -2,14 +2,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 
-// Import utility functions
 import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
   formatDateForInput,
 } from "../utils/dateUtils";
-
-// Import dashboard widget components
 import BalanceSummary from "../components/dashboard/BalanceSummary";
 import TotalExpensesWidget from "../components/dashboard/TotalExpensesWidget";
 import CategoryBreakdownWidget from "../components/dashboard/CategoryBreakdownWidget";
@@ -17,33 +14,20 @@ import TransactionList from "../components/TransactionList";
 
 function DashboardPage() {
   const { transactions, userNames, categories, sectors } = useOutletContext();
-  console.log("[DashboardPage] Context:", {
-    transactions,
-    userNames,
-    categories,
-    sectors,
-  });
 
-  // State for date filters
   const [startDate, setStartDate] = useState(
     formatDateForInput(getFirstDayOfMonth(new Date()))
   );
   const [endDate, setEndDate] = useState(
     formatDateForInput(getLastDayOfMonth(new Date()))
   );
-
-  // State for person involvement filter
   const [personInvolvementFilter, setPersonInvolvementFilter] = useState({
     user1: true,
     user2: true,
   });
-
-  // State for category/sector filter. Value can be 'all', 'cat_CATEGORY_ID', or 'sec_SECTOR_ID'
   const [categorySectorFilter, setCategorySectorFilter] = useState("all");
 
-  useEffect(() => {
-    console.log("[DashboardPage] userNames context updated:", userNames);
-  }, [userNames]);
+  useEffect(() => {}, [userNames]);
 
   const handlePersonFilterChange = (event) => {
     const { name, checked } = event.target;
@@ -57,6 +41,7 @@ function DashboardPage() {
     setCategorySectorFilter(event.target.value);
   };
 
+  // 1. Filter by Date (Base for all other filters)
   const transactionsInDateRange = useMemo(() => {
     if (!transactions || transactions.length === 0) return [];
     const start = new Date(startDate);
@@ -73,83 +58,152 @@ function DashboardPage() {
     });
   }, [transactions, startDate, endDate]);
 
-  const transactionsByPerson = useMemo(() => {
-    if (!userNames || userNames.length < 2) return transactionsInDateRange;
-    if (personInvolvementFilter.user1 && personInvolvementFilter.user2)
-      return transactionsInDateRange;
-    if (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
-      return [];
+  // 2. Pre-process transactions to apply linked reimbursements to expenses
+  const effectiveTransactions = useMemo(() => {
+    if (!transactionsInDateRange) return [];
+    const expensesToAdjust = transactionsInDateRange
+      .filter((t) => t.transaction_type === "expense")
+      .map((expense) => ({
+        ...expense,
+        effectiveAmount: expense.amount,
+        category_name_for_reimbursement_logic: expense.category_name,
+      }));
+    const reimbursements = transactionsInDateRange.filter(
+      (t) => t.transaction_type === "reimbursement"
+    );
+    reimbursements.forEach((r) => {
+      if (r.reimburses_transaction_id) {
+        const originalExpense = expensesToAdjust.find(
+          (exp) => exp.id === r.reimburses_transaction_id
+        );
+        if (originalExpense) {
+          originalExpense.effectiveAmount -= r.amount;
+        }
+      }
+    });
+    return transactionsInDateRange.map((t) => {
+      if (t.transaction_type === "expense") {
+        const adjustedExpense = expensesToAdjust.find((exp) => exp.id === t.id);
+        return adjustedExpense
+          ? { ...adjustedExpense, amount: adjustedExpense.effectiveAmount }
+          : t;
+      }
+      return t;
+    });
+  }, [transactionsInDateRange]);
 
-    return transactionsInDateRange.filter((t) => {
-      if (
-        personInvolvementFilter.user1 &&
-        (t.split_type === "user1_only" || t.split_type === "splitEqually")
-      )
-        return true;
-      if (
-        personInvolvementFilter.user2 &&
-        (t.split_type === "user2_only" || t.split_type === "splitEqually")
-      )
-        return true;
+  // 3. Prepare transactions specifically for Expense Widgets (TotalExpenses, CategoryBreakdown)
+  // This list will contain only 'expense' type transactions with amounts adjusted based on person filter.
+  const expensesForWidgets = useMemo(() => {
+    if (!effectiveTransactions || !userNames || userNames.length < 2) return [];
+
+    // const [user1Name, user2Name] = userNames; // These were unused here, causing ESLint error. userNames[0] and userNames[1] are used directly.
+    const onlyUser1Selected =
+      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
+    const onlyUser2Selected =
+      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
+    const combinedView =
+      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
+      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2);
+
+    return effectiveTransactions
+      .filter((t) => t.transaction_type === "expense")
+      .map((expense) => {
+        let individualAmount = expense.amount;
+
+        if (onlyUser1Selected) {
+          if (expense.split_type === "user1_only") {
+            // Full amount for User1
+          } else if (expense.split_type === "splitEqually") {
+            individualAmount /= 2;
+          } else if (expense.split_type === "user2_only") {
+            return null;
+          }
+        } else if (onlyUser2Selected) {
+          if (expense.split_type === "user2_only") {
+            // Full amount for User2
+          } else if (expense.split_type === "splitEqually") {
+            individualAmount /= 2;
+          } else if (expense.split_type === "user1_only") {
+            return null;
+          }
+        } else if (combinedView) {
+          // Keep full amount for combined view
+        } else {
+          return null;
+        }
+        return { ...expense, amount: individualAmount };
+      })
+      .filter((expense) => expense !== null && expense.amount !== undefined);
+  }, [effectiveTransactions, personInvolvementFilter, userNames]);
+
+  // 4. Filter by Person Involvement for the general TransactionList display
+  const transactionsByPersonForDisplay = useMemo(() => {
+    if (!userNames || userNames.length < 2) return effectiveTransactions;
+    if (
+      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
+      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
+    ) {
+      return effectiveTransactions;
+    }
+    return effectiveTransactions.filter((t) => {
+      const type = t.transaction_type || "expense";
+      if (personInvolvementFilter.user1) {
+        if (t.paid_by_user_name === userNames[0]) return true;
+        if (
+          type === "expense" &&
+          (t.split_type === "user1_only" || t.split_type === "splitEqually")
+        )
+          return true;
+        if (type === "settlement" && t.paid_to_user_name === userNames[0])
+          return true;
+      }
+      if (personInvolvementFilter.user2) {
+        if (t.paid_by_user_name === userNames[1]) return true;
+        if (
+          type === "expense" &&
+          (t.split_type === "user2_only" || t.split_type === "splitEqually")
+        )
+          return true;
+        if (type === "settlement" && t.paid_to_user_name === userNames[1])
+          return true;
+      }
       return false;
     });
-  }, [transactionsInDateRange, personInvolvementFilter, userNames]);
+  }, [effectiveTransactions, personInvolvementFilter, userNames]);
 
-  const finalFilteredTransactions = useMemo(() => {
-    console.log(
-      "[DashboardPage] Applying Category/Sector Filter. Current selection:",
-      categorySectorFilter
-    );
-    console.log("[DashboardPage] Categories available for filter:", categories);
-    console.log("[DashboardPage] Sectors available for filter:", sectors);
+  // 5. Filter by Category/Sector (applied to transactionsByPersonForDisplay)
+  const finalFilteredTransactionsForDisplay = useMemo(() => {
+    if (categorySectorFilter === "all") return transactionsByPersonForDisplay;
+    const [filterType, filterId] = categorySectorFilter.split("_");
 
-    if (categorySectorFilter === "all") {
-      return transactionsByPerson;
-    }
+    return transactionsByPersonForDisplay.filter((t) => {
+      const type = t.transaction_type || "expense";
+      if (type !== "expense") return true;
 
-    const [type, id] = categorySectorFilter.split("_");
+      const categoryToMatch =
+        t.category_name_for_reimbursement_logic || t.category_name;
 
-    if (type === "cat") {
-      const selectedCategory = categories.find((c) => c.id === id);
-      if (!selectedCategory) return transactionsByPerson; // Should not happen if UI is correct
-      console.log(
-        "[DashboardPage] Filtering by Category Name:",
-        selectedCategory.name
-      );
-      return transactionsByPerson.filter(
-        (t) => t.category_name === selectedCategory.name
-      );
-    }
-
-    if (type === "sec") {
-      const selectedSector = sectors.find((s) => s.id === id);
-      if (!selectedSector || !selectedSector.category_ids)
-        return transactionsByPerson;
-
-      // Get names of categories within the selected sector
-      const categoryNamesInSector = selectedSector.category_ids
-        .map((catId) => {
-          const category = categories.find((c) => c.id === catId);
-          return category ? category.name : null;
-        })
-        .filter((name) => name !== null); // Filter out nulls if a category ID in sector is somehow invalid
-
-      console.log(
-        "[DashboardPage] Filtering by Sector. Categories in sector:",
-        categoryNamesInSector
-      );
-      if (categoryNamesInSector.length === 0) return []; // No categories in sector, so no transactions match
-
-      return transactionsByPerson.filter((t) =>
-        categoryNamesInSector.includes(t.category_name)
-      );
-    }
-    return transactionsByPerson; // Fallback
-  }, [transactionsByPerson, categorySectorFilter, categories, sectors]);
-
-  const totalExpensesForFinalFilter = useMemo(() => {
-    return finalFilteredTransactions.reduce((sum, t) => sum + t.amount, 0);
-  }, [finalFilteredTransactions]);
+      if (filterType === "cat") {
+        const selectedCategory = categories.find((c) => c.id === filterId);
+        return selectedCategory && categoryToMatch === selectedCategory.name;
+      }
+      if (filterType === "sec") {
+        const selectedSector = sectors.find((s) => s.id === filterId);
+        if (!selectedSector || !selectedSector.category_ids) return false;
+        const categoryNamesInSector = selectedSector.category_ids
+          .map((catId) => categories.find((c) => c.id === catId)?.name)
+          .filter((name) => name);
+        return categoryNamesInSector.includes(categoryToMatch);
+      }
+      return true;
+    });
+  }, [
+    transactionsByPersonForDisplay,
+    categorySectorFilter,
+    categories,
+    sectors,
+  ]);
 
   const getSelectedInvolvementText = () => {
     if (!userNames || userNames.length < 2) return "All Users";
@@ -172,7 +226,6 @@ function DashboardPage() {
         }}
       >
         <h3>Filters</h3>
-        {/* Date Filters */}
         <div style={{ marginBottom: "10px" }}>
           <label htmlFor="startDate" style={{ marginRight: "5px" }}>
             From:
@@ -194,39 +247,39 @@ function DashboardPage() {
             onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
-        {/* Person Filters */}
         <div style={{ marginBottom: "10px" }}>
           <label style={{ marginRight: "10px" }}>Show expenses for:</label>
           {userNames && userNames.length > 0 && (
             <span style={{ marginRight: "15px" }}>
+              {" "}
               <input
                 type="checkbox"
                 id="filterUser1"
                 name="user1"
                 checked={personInvolvementFilter.user1}
                 onChange={handlePersonFilterChange}
-              />
+              />{" "}
               <label htmlFor="filterUser1" style={{ marginLeft: "5px" }}>
                 {userNames[0]}
-              </label>
+              </label>{" "}
             </span>
           )}
           {userNames && userNames.length > 1 && (
             <span>
+              {" "}
               <input
                 type="checkbox"
                 id="filterUser2"
                 name="user2"
                 checked={personInvolvementFilter.user2}
                 onChange={handlePersonFilterChange}
-              />
+              />{" "}
               <label htmlFor="filterUser2" style={{ marginLeft: "5px" }}>
                 {userNames[1]}
-              </label>
+              </label>{" "}
             </span>
           )}
         </div>
-        {/* Category/Sector Filter */}
         <div>
           <label htmlFor="categorySectorFilter" style={{ marginRight: "5px" }}>
             Filter by Category/Sector:
@@ -238,35 +291,32 @@ function DashboardPage() {
           >
             <option value="all">All Categories/Sectors</option>
             <optgroup label="Categories">
+              {" "}
               {categories.map((cat) => (
                 <option key={`cat_${cat.id}`} value={`cat_${cat.id}`}>
                   {cat.name}
                 </option>
-              ))}
+              ))}{" "}
             </optgroup>
             <optgroup label="Sectors">
+              {" "}
               {sectors.map((sec) => (
                 <option key={`sec_${sec.id}`} value={`sec_${sec.id}`}>
                   {sec.name}
                 </option>
-              ))}
+              ))}{" "}
             </optgroup>
           </select>
         </div>
       </div>
 
       <BalanceSummary transactionsInDateRange={transactionsInDateRange} />
-      <TotalExpensesWidget
-        transactionsInDateRange={finalFilteredTransactions}
-      />
-      <CategoryBreakdownWidget
-        transactionsInDateRange={finalFilteredTransactions}
-        totalExpenses={totalExpensesForFinalFilter}
-      />
+      <TotalExpensesWidget transactionsInDateRange={expensesForWidgets} />
+      <CategoryBreakdownWidget transactionsInDateRange={expensesForWidgets} />
 
       <div id="recentTransactionsSection" style={{ marginTop: "20px" }}>
-        <h3>Recent Transactions (For: {getSelectedInvolvementText()})</h3>
-        <TransactionList transactions={finalFilteredTransactions} />
+        <h3>Recent Transactions (Involving: {getSelectedInvolvementText()})</h3>
+        <TransactionList transactions={finalFilteredTransactionsForDisplay} />
       </div>
     </div>
   );

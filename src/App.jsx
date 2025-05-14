@@ -7,19 +7,19 @@ import "./App.css";
 function App() {
   const [transactions, setTransactions] = useState([]);
   const [userNames, setUserNames] = useState([]);
-  const [categories, setCategories] = useState([]); // Now: [{ id, name }, ...]
-  const [sectors, setSectors] = useState([]); // Now: [{ id, name, category_ids: [...] }, ...]
+  const [categories, setCategories] = useState([]); // Array of objects: [{ id, name }, ...]
+  const [sectors, setSectors] = useState([]);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- Data Fetching ---
+  // --- Data Fetching (ensure this is up-to-date from app_jsx_with_sectors) ---
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Fetch App Settings (User Names)
+        // User Names, Categories, Sectors fetching remains the same...
         let { data: appSettings, error: settingsError } = await supabase
           .from("app_settings")
           .select("key, value");
@@ -34,7 +34,6 @@ function App() {
         }
         setUserNames([fetchedUser1Name, fetchedUser2Name]);
 
-        // 2. Fetch Categories (now fetching id and name)
         let { data: fetchedCategories, error: categoriesError } = await supabase
           .from("categories")
           .select("id, name")
@@ -42,19 +41,15 @@ function App() {
         if (categoriesError) throw categoriesError;
         setCategories(fetchedCategories || []);
 
-        // 3. Fetch Sectors
         let { data: fetchedSectors, error: sectorsError } = await supabase
           .from("sectors")
           .select("id, name")
           .order("name", { ascending: true });
         if (sectorsError) throw sectorsError;
-
-        // 4. Fetch Sector-Category relationships and map to sectors
         let { data: sectorCategoryLinks, error: scError } = await supabase
           .from("sector_categories")
           .select("sector_id, category_id");
         if (scError) throw scError;
-
         const sectorsWithCategories = (fetchedSectors || []).map((sector) => ({
           ...sector,
           category_ids: (sectorCategoryLinks || [])
@@ -63,20 +58,15 @@ function App() {
         }));
         setSectors(sectorsWithCategories);
 
-        // 5. Fetch Transactions
+        // Transactions (will now include reimburses_transaction_id)
         let { data: fetchedTransactions, error: transactionsError } =
           await supabase
             .from("transactions")
             .select("*")
             .order("date", { ascending: false });
         if (transactionsError) throw transactionsError;
-        // IMPORTANT: Ensure transactions store category_id (UUID) not category_name
-        // If your 'transactions' table stores 'category_name', you'll need to adjust how you link/filter
-        // For now, assuming 'category_name' is still used in transactions for simplicity of this step,
-        // but ideally, transactions.category_id would reference categories.id
         setTransactions(fetchedTransactions || []);
       } catch (err) {
-        // Changed error variable name
         console.error("Error fetching initial data:", err);
         setError(err.message || "Failed to fetch data. Please try again.");
       } finally {
@@ -86,27 +76,44 @@ function App() {
     fetchData();
   }, []);
 
-  // --- Transaction CRUD (Ensure category_name is used if that's what transactions table stores) ---
+  // --- Transaction CRUD ---
   const addTransaction = useCallback(async (newTransactionData) => {
     try {
       const transactionToInsert = {
         date: newTransactionData.date,
         description: newTransactionData.description,
         amount: newTransactionData.amount,
-        // Assuming transactions table uses category_name. If it uses category_id, this needs to change.
-        category_name: newTransactionData.category, // This is a category NAME
-        paid_by_user_name: newTransactionData.paidBy,
-        split_type: newTransactionData.splitType,
+        paid_by_user_name: newTransactionData.paid_by_user_name, // Who paid or received
+        transaction_type: newTransactionData.transaction_type || "expense",
+        // Nullable fields by default
+        category_name: null,
+        split_type: null,
+        paid_to_user_name: null,
+        reimburses_transaction_id:
+          newTransactionData.reimburses_transaction_id || null,
       };
+
+      if (transactionToInsert.transaction_type === "expense") {
+        transactionToInsert.category_name = newTransactionData.category_name;
+        transactionToInsert.split_type = newTransactionData.split_type;
+      } else if (transactionToInsert.transaction_type === "settlement") {
+        transactionToInsert.category_name = "Settlement"; // Or keep null
+        transactionToInsert.paid_to_user_name =
+          newTransactionData.paid_to_user_name;
+      }
+      // For 'income' and 'reimbursement', category_name is already null by default.
+      // reimburses_transaction_id is handled by its presence in newTransactionData.
+
       const { data, error } = await supabase
         .from("transactions")
         .insert([transactionToInsert])
         .select();
       if (error) throw error;
-      if (data && data.length > 0)
+      if (data && data.length > 0) {
         setTransactions((prev) =>
           [data[0], ...prev].sort((a, b) => new Date(b.date) - new Date(a.date))
         );
+      }
     } catch (err) {
       console.error("Error adding transaction:", err);
       alert(`Error: ${err.message}`);
@@ -119,10 +126,25 @@ function App() {
         date: updatedTransactionData.date,
         description: updatedTransactionData.description,
         amount: updatedTransactionData.amount,
-        category_name: updatedTransactionData.category, // This is a category NAME
-        paid_by_user_name: updatedTransactionData.paidBy,
-        split_type: updatedTransactionData.splitType,
+        paid_by_user_name: updatedTransactionData.paid_by_user_name,
+        transaction_type: updatedTransactionData.transaction_type || "expense",
+        category_name: null,
+        split_type: null,
+        paid_to_user_name: null,
+        reimburses_transaction_id:
+          updatedTransactionData.reimburses_transaction_id || null,
       };
+
+      if (transactionToUpdate.transaction_type === "expense") {
+        transactionToUpdate.category_name =
+          updatedTransactionData.category_name;
+        transactionToUpdate.split_type = updatedTransactionData.split_type;
+      } else if (transactionToUpdate.transaction_type === "settlement") {
+        transactionToUpdate.category_name = "Settlement"; // Or keep null
+        transactionToUpdate.paid_to_user_name =
+          updatedTransactionData.paid_to_user_name;
+      }
+
       const { data, error } = await supabase
         .from("transactions")
         .update(transactionToUpdate)
@@ -143,8 +165,9 @@ function App() {
     }
   }, []);
 
+  // deleteTransaction, updateUserNames, addCategory, deleteCategory, sector CRUD, handleSetEditingTransaction remain the same
+  // ... (ensure these are correctly implemented from previous versions) ...
   const deleteTransaction = useCallback(async (transactionId) => {
-    /* ... remains same ... */
     try {
       const { error } = await supabase
         .from("transactions")
@@ -158,9 +181,7 @@ function App() {
     }
   }, []);
 
-  // --- Settings CRUD ---
   const updateUserNames = useCallback(async (n1, n2) => {
-    /* ... remains same ... */
     try {
       await supabase
         .from("app_settings")
@@ -206,12 +227,11 @@ function App() {
   );
 
   const deleteCategory = useCallback(async (categoryToDelete) => {
-    // Now categoryToDelete is an object {id, name}
     try {
       const { count, error: countError } = await supabase
         .from("transactions")
         .select("id", { count: "exact", head: true })
-        .eq("category_name", categoryToDelete.name); // Still checking by name
+        .eq("category_name", categoryToDelete.name);
       if (countError) throw countError;
       if (count > 0) {
         alert(
@@ -234,7 +254,6 @@ function App() {
     }
   }, []);
 
-  // --- Sector CRUD ---
   const addSector = useCallback(
     async (sectorName) => {
       if (!sectorName || sectors.find((s) => s.name === sectorName)) {
@@ -253,7 +272,7 @@ function App() {
           setSectors((prev) =>
             [...prev, newSector].sort((a, b) => a.name.localeCompare(b.name))
           );
-          return newSector; // Return the new sector object
+          return newSector;
         }
         return null;
       } catch (err) {
@@ -267,7 +286,6 @@ function App() {
 
   const deleteSector = useCallback(async (sectorId) => {
     try {
-      // Deleting a sector will also delete its links in sector_categories due to ON DELETE CASCADE
       const { error } = await supabase
         .from("sectors")
         .delete()
@@ -284,19 +302,16 @@ function App() {
   const addCategoryToSector = useCallback(
     async (sectorId, categoryId) => {
       try {
-        // Check if link already exists to prevent duplicates if DB constraint fails silently
         const currentSector = sectors.find((s) => s.id === sectorId);
         if (currentSector && currentSector.category_ids.includes(categoryId)) {
           alert("Category already in this sector.");
           return;
         }
-
         const { data, error } = await supabase
           .from("sector_categories")
           .insert([{ sector_id: sectorId, category_id: categoryId }])
           .select();
         if (error) throw error;
-
         if (data && data.length > 0) {
           setSectors((prevSectors) =>
             prevSectors.map((s) =>
