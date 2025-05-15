@@ -1,26 +1,24 @@
 // src/components/TransactionList.jsx
 import React from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
-import { Transaction } from "../App";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+// import { Transaction } from "../App";
 
 interface TransactionListProps {
-  transactions: Transaction[];
-}
-
-interface TransactionListContext {
-  userNames: string[];
+  transactions: any[];
   deleteTransaction: (id: string) => void;
-  handleSetEditingTransaction: (t: Transaction) => void;
-  transactions: Transaction[];
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
+const TransactionList: React.FC<TransactionListProps> = ({
+  transactions,
+  deleteTransaction,
+}) => {
   const {
     userNames,
-    deleteTransaction,
     handleSetEditingTransaction,
     transactions: allTransactions,
-  } = useOutletContext<TransactionListContext>();
+  } = useOutletContext<any>();
   const navigate = useNavigate();
 
   const getSplitTypeLabel = (splitTypeParam: string) => {
@@ -48,7 +46,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
     }
   };
 
-  const onEdit = (transaction: Transaction) => {
+  const onEdit = (transaction: any) => {
     handleSetEditingTransaction(transaction);
     navigate("/transactions");
   };
@@ -67,92 +65,107 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
   );
 
   return (
-    <div>
-      <ul style={{ listStyleType: "none", padding: 0 }}>
-        {sortedTransactions.map((t) => {
-          const type = t.transaction_type || "expense";
-          let reimbursedExpenseDescription = null;
-          if (
-            type === "reimbursement" &&
-            t.reimburses_transaction_id &&
-            allTransactions
-          ) {
-            const originalExpense = allTransactions.find(
-              (exp) => exp.id === t.reimburses_transaction_id
-            );
-            if (originalExpense) {
-              reimbursedExpenseDescription = originalExpense.description;
-            }
+    <div className="space-y-4">
+      {sortedTransactions.map((t) => {
+        const type = t.transaction_type || "expense";
+        let reimbursedExpenseDescription = null;
+        if (
+          type === "reimbursement" &&
+          t.reimburses_transaction_id &&
+          allTransactions
+        ) {
+          const originalExpense = allTransactions.find(
+            (exp: any) => exp.id === t.reimburses_transaction_id
+          );
+          if (originalExpense) {
+            reimbursedExpenseDescription = originalExpense.description;
           }
+        }
 
-          return (
-            <li
-              key={t.id}
-              style={{
-                border: "1px solid #eee",
-                padding: "10px",
-                marginBottom: "10px",
-              }}
-            >
-              <div>
-                <strong>{t.description}</strong> - ${t.amount.toFixed(2)}
-                <em
-                  style={{
-                    marginLeft: "10px",
-                    fontSize: "0.9em",
-                    color: "#555",
-                  }}
-                >
-                  ({type.charAt(0).toUpperCase() + type.slice(1)})
-                </em>
-              </div>
-              <small>Date: {t.date}</small>
-              <br />
-
-              {type === "expense" && (
-                <>
-                  <small>Category: {t.category_name || "N/A"}</small>
-                  <br />
-                  <small>Paid by: {t.paid_by_user_name || "N/A"}</small>
-                  <br />
-                  <small>Split: {getSplitTypeLabel(t.split_type || "")}</small>
-                </>
-              )}
-              {type === "settlement" && (
-                <>
-                  <small>Payer: {t.paid_by_user_name || "N/A"}</small>
-                  <br />
-                  <small>Payee: {t.paid_to_user_name || "N/A"}</small>
-                </>
-              )}
-              {(type === "income" || type === "reimbursement") && (
-                <>
-                  <small>Category: N/A</small>
-                  <br />
-                  <small>Received by: {t.paid_by_user_name || "N/A"}</small>
-                  {reimbursedExpenseDescription && (
+        return (
+          <Card key={t.id} className="p-0">
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <div className="font-semibold">
+                    {t.description} - ${t.amount.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    ({type.charAt(0).toUpperCase() + type.slice(1)})
+                  </div>
+                  <div className="text-xs mt-1">Date: {t.date}</div>
+                  {type === "expense" && (
                     <>
-                      <br />
-                      <small style={{ color: "green" }}>
-                        Reimburses: "{reimbursedExpenseDescription}"
-                      </small>
+                      <div className="text-xs">
+                        Category: {t.category_name || "N/A"}
+                      </div>
+                      <div className="text-xs">
+                        Paid by:{" "}
+                        {t.paid_by_user_name === "Shared"
+                          ? "Shared"
+                          : t.paid_by_user_name || "N/A"}
+                      </div>
+                      <div className="text-xs">
+                        Split: {getSplitTypeLabel(t.split_type || "")}
+                      </div>
                     </>
                   )}
-                </>
-              )}
-              <div style={{ marginTop: "5px" }}>
-                <button
-                  onClick={() => onEdit(t)}
-                  style={{ marginRight: "5px" }}
-                >
-                  Edit
-                </button>
-                <button onClick={() => onDelete(t.id)}>Delete</button>
+                  {type === "settlement" && (
+                    <>
+                      <div className="text-xs">
+                        Payer: {t.paid_by_user_name || "N/A"}
+                      </div>
+                      <div className="text-xs">
+                        Payee: {t.paid_to_user_name || "N/A"}
+                      </div>
+                    </>
+                  )}
+                  {(type === "income" || type === "reimbursement") && (
+                    <>
+                      <div className="text-xs">
+                        Category:{" "}
+                        {t.category_name
+                          ? t.category_name
+                          : type === "reimbursement" &&
+                            t.reimburses_transaction_id &&
+                            allTransactions
+                          ? (() => {
+                              const originalExpense = allTransactions.find(
+                                (exp: any) =>
+                                  exp.id === t.reimburses_transaction_id
+                              );
+                              return originalExpense?.category_name || "N/A";
+                            })()
+                          : "N/A"}
+                      </div>
+                      <div className="text-xs">
+                        Received by: {t.paid_by_user_name || "N/A"}
+                      </div>
+                      {reimbursedExpenseDescription && (
+                        <div className="text-xs text-green-600">
+                          Reimburses: "{reimbursedExpenseDescription}"
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-2 md:mt-0">
+                  <Button size="sm" variant="outline" onClick={() => onEdit(t)}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => onDelete(t.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };

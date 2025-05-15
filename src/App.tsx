@@ -24,6 +24,140 @@ const App: React.FC = () => {
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<any | null>(
+    null
+  );
+  const handleSetEditingTransaction = (t: any) => setEditingTransaction(t);
+
+  const addCategory = useCallback(async (name: string) => {
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("categories")
+      .insert([{ name }])
+      .select();
+    if (error) return alert(error.message);
+    if (data && data.length > 0) setCategories((prev) => [...prev, data[0]]);
+  }, []);
+
+  const deleteCategory = useCallback(async (cat: any) => {
+    if (!cat?.id) return;
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", cat.id);
+    if (error) return alert(error.message);
+    setCategories((prev) => prev.filter((c) => c.id !== cat.id));
+  }, []);
+
+  const addSector = useCallback(async (name: string) => {
+    if (!name) return null;
+    const { data, error } = await supabase
+      .from("sectors")
+      .insert([{ name }])
+      .select();
+    if (error) {
+      alert(error.message);
+      return null;
+    }
+    if (data && data.length > 0) {
+      const newSector = { ...data[0], category_ids: [] };
+      setSectors((prev) => [...prev, newSector]);
+      return newSector;
+    }
+    return null;
+  }, []);
+
+  const deleteSector = useCallback(async (id: string) => {
+    if (!id) return;
+    const { error } = await supabase.from("sectors").delete().eq("id", id);
+    if (error) return alert(error.message);
+    setSectors((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const addCategoryToSector = useCallback(
+    async (sectorId: string, categoryId: string) => {
+      if (!sectorId || !categoryId) return;
+      const { error } = await supabase
+        .from("sector_categories")
+        .insert([{ sector_id: sectorId, category_id: categoryId }]);
+      if (error) return alert(error.message);
+      setSectors((prev) =>
+        prev.map((s) =>
+          s.id === sectorId
+            ? { ...s, category_ids: [...(s.category_ids || []), categoryId] }
+            : s
+        )
+      );
+    },
+    []
+  );
+
+  const removeCategoryFromSector = useCallback(
+    async (sectorId: string, categoryId: string) => {
+      if (!sectorId || !categoryId) return;
+      const { error } = await supabase
+        .from("sector_categories")
+        .delete()
+        .match({ sector_id: sectorId, category_id: categoryId });
+      if (error) return alert(error.message);
+      setSectors((prev) =>
+        prev.map((s) =>
+          s.id === sectorId
+            ? {
+                ...s,
+                category_ids: (s.category_ids || []).filter(
+                  (id: string) => id !== categoryId
+                ),
+              }
+            : s
+        )
+      );
+    },
+    []
+  );
+
+  const updateUserNames = useCallback(async (n1: string, n2: string) => {
+    await supabase
+      .from("app_settings")
+      .update({ value: n1 })
+      .eq("key", "user1_name");
+    await supabase
+      .from("app_settings")
+      .update({ value: n2 })
+      .eq("key", "user2_name");
+    setUserNames([n1, n2]);
+  }, []);
+
+  const addTransaction = useCallback(async (t: Partial<Transaction>) => {
+    if (!t) return;
+    const { data, error } = await supabase
+      .from("transactions")
+      .insert([t])
+      .select();
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    if (data && data.length > 0) setTransactions((prev) => [data[0], ...prev]);
+  }, []);
+
+  const updateTransaction = useCallback(async (t: Partial<Transaction>) => {
+    if (!t || !t.id) return;
+    const { data, error } = await supabase
+      .from("transactions")
+      .update(t)
+      .eq("id", t.id)
+      .select();
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    if (data && data.length > 0) {
+      setTransactions((prev) =>
+        prev.map((tr) => (tr.id === t.id ? { ...tr, ...data[0] } : tr))
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -92,6 +226,7 @@ const App: React.FC = () => {
   }, []);
 
   const location = useLocation();
+
   if (loading)
     return (
       <div className="flex-1 flex items-center justify-center">Loading...</div>
@@ -117,7 +252,25 @@ const App: React.FC = () => {
         ))}
       </nav>
       <main className="flex-1 flex flex-col items-center justify-center p-8">
-        <Outlet context={{ transactions, userNames, categories, sectors }} />
+        <Outlet
+          context={{
+            transactions,
+            userNames,
+            categories,
+            sectors,
+            addCategory,
+            deleteCategory,
+            addSector,
+            deleteSector,
+            addCategoryToSector,
+            removeCategoryFromSector,
+            updateUserNames,
+            handleSetEditingTransaction,
+            editingTransaction,
+            addTransaction,
+            updateTransaction,
+          }}
+        />
       </main>
     </div>
   );

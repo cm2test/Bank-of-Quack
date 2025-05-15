@@ -1,41 +1,100 @@
 // src/components/dashboard/CategoryBreakdownWidget.tsx
 import React, { useMemo } from "react";
-import { Transaction } from "../../App";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useOutletContext } from "react-router-dom";
 
 interface CategoryBreakdownWidgetProps {
-  transactionsInDateRange: Transaction[];
+  transactionsInDateRange: any[];
 }
 
 const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
   transactionsInDateRange,
 }) => {
-  // This prop is now 'expensesForWidgets' from DashboardPage
+  const context = useOutletContext<any>();
+  const userNames = context?.userNames || [];
+  const personInvolvementFilter = context?.personInvolvementFilter || {
+    user1: true,
+    user2: true,
+  };
+
   const categoryBreakdown = useMemo(() => {
-    if (!transactionsInDateRange) return [];
-
-    // The incoming list (expensesForWidgets) is already:
-    // 1. Filtered for transaction_type === 'expense'.
-    // 2. Amounts are net of linked reimbursements.
-    // 3. Amounts are adjusted (e.g., halved) if a single person filter is active.
-
-    const netCategoryAmounts: Record<string, number> =
-      transactionsInDateRange.reduce((acc, t) => {
-        // Use the original category name (before any reimbursement linking might have altered it for display)
+    if (!transactionsInDateRange || userNames.length < 2) {
+      // If not enough users, just sum all expenses by category
+      const netCategoryAmounts: Record<string, number> = transactionsInDateRange
+        ? transactionsInDateRange
+            .filter((t) => t.transaction_type === "expense")
+            .reduce((acc, t) => {
+              const category =
+                (t as any).category_name_for_reimbursement_logic ||
+                t.category_name ||
+                "Uncategorized";
+              const amount = t.amount || 0;
+              acc[category] = (acc[category] || 0) + amount;
+              return acc;
+            }, {} as Record<string, number>)
+        : {};
+      const totalNetDisplayExpenses = Object.values(netCategoryAmounts).reduce(
+        (sum, amount) => sum + amount,
+        0
+      );
+      return Object.entries(netCategoryAmounts)
+        .map(([category, amount]) => ({
+          category,
+          amount,
+          percentage:
+            totalNetDisplayExpenses > 0
+              ? (amount / totalNetDisplayExpenses) * 100
+              : 0,
+        }))
+        .sort((a, b) => b.amount - a.amount);
+    }
+    const onlyUser1 =
+      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
+    const onlyUser2 =
+      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
+    const bothOrNeither =
+      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
+      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2);
+    const netCategoryAmounts: Record<string, number> = transactionsInDateRange
+      .filter((t) => t.transaction_type === "expense")
+      .reduce((acc, t) => {
+        const splitType = t.split_type;
         const category =
           (t as any).category_name_for_reimbursement_logic ||
           t.category_name ||
           "Uncategorized";
-        const amount = t.amount || 0; // This is the final amount for this user's view
-
+        let amount = t.amount || 0;
+        if (t.paid_by_user_name === "Shared") {
+          // Only include in bothOrNeither (combined) view
+          if (!bothOrNeither) {
+            amount = 0;
+          }
+        } else if (onlyUser1) {
+          if (splitType === "user1_only") {
+            // amount stays as is
+          } else if (splitType === "splitEqually") {
+            amount = amount / 2;
+          } else if (splitType === "user2_only") {
+            amount = 0;
+          }
+        } else if (onlyUser2) {
+          if (splitType === "user2_only") {
+            // amount stays as is
+          } else if (splitType === "splitEqually") {
+            amount = amount / 2;
+          } else if (splitType === "user1_only") {
+            amount = 0;
+          }
+        } else if (bothOrNeither) {
+          // amount stays as is
+        }
         acc[category] = (acc[category] || 0) + amount;
         return acc;
       }, {} as Record<string, number>);
-
     const totalNetDisplayExpenses = Object.values(netCategoryAmounts).reduce(
       (sum, amount) => sum + amount,
       0
     );
-
     return Object.entries(netCategoryAmounts)
       .map(([category, amount]) => ({
         category,
@@ -46,30 +105,33 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
             : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [transactionsInDateRange]);
+  }, [transactionsInDateRange, userNames, personInvolvementFilter]);
 
   return (
-    <div
-      id="categoryBreakdownSection"
-      style={{ padding: "10px", border: "1px solid #ccc", margin: "10px 0" }}
-    >
-      <h3>Expenses by Category</h3>
-      {categoryBreakdown.length === 0 ? (
-        <p>No expenses in this period to categorize.</p>
-      ) : (
-        <ul style={{ listStyleType: "none", padding: 0 }}>
-          {categoryBreakdown.map(
-            (item) =>
-              item.amount !== 0 && (
-                <li key={item.category} style={{ marginBottom: "5px" }}>
-                  {item.category}: ${item.amount.toFixed(2)}
-                  {item.percentage !== 0 && ` (${item.percentage.toFixed(1)}%)`}
-                </li>
-              )
-          )}
-        </ul>
-      )}
-    </div>
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>Category Breakdown</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {categoryBreakdown.length === 0 ? (
+          <p className="text-muted-foreground">No expenses to show.</p>
+        ) : (
+          <ul className="space-y-1">
+            {categoryBreakdown.map((item) => (
+              <li key={item.category} className="flex justify-between">
+                <span>{item.category}</span>
+                <span>
+                  ${item.amount.toFixed(2)}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({item.percentage.toFixed(1)}%)
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

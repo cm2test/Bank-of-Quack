@@ -1,33 +1,34 @@
 // src/components/dashboard/BalanceSummary.jsx
 import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Transaction } from "../../App";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 interface BalanceSummaryProps {
-  transactionsInDateRange: Transaction[];
-}
-
-interface BalanceSummaryContext {
-  userNames: string[];
+  transactionsInDateRange: any[];
 }
 
 const BalanceSummary: React.FC<BalanceSummaryProps> = ({
   transactionsInDateRange,
 }) => {
-  const { userNames } = useOutletContext<BalanceSummaryContext>();
+  const { userNames } = useOutletContext<any>();
 
   const balanceSummary = useMemo(() => {
     if (!userNames || userNames.length < 2 || !transactionsInDateRange)
       return 0;
 
     const [user1, user2] = userNames;
-    let netBalanceUser1OwesUser2 = 0; // Positive: user1 owes user2. Negative: user2 owes user1.
+    let netBalanceUser1OwesUser2 = 0;
 
     transactionsInDateRange.forEach((t) => {
       const amount = t.amount;
-      const type = t.transaction_type || "expense"; // Default to 'expense' if undefined
+      const type = t.transaction_type || "expense";
 
       if (type === "expense") {
+        if (t.paid_by_user_name === "Shared") {
+          // Shared paid, ignore for balance
+          return;
+        }
         if (t.paid_by_user_name === user1) {
           if (t.split_type === "splitEqually") {
             netBalanceUser1OwesUser2 -= amount / 2;
@@ -51,7 +52,6 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           netBalanceUser1OwesUser2 += amount;
         }
       }
-      // 'income' and 'reimbursement' types are ignored for this balance calculation
     });
     return netBalanceUser1OwesUser2;
   }, [transactionsInDateRange, userNames]);
@@ -71,13 +71,14 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
   };
 
   return (
-    <div
-      id="whoOwesWhomSection"
-      style={{ padding: "10px", border: "1px solid #ccc", margin: "10px 0" }}
-    >
-      <h3>Balance Summary</h3>
-      <p>{renderBalanceMessage()}</p>
-    </div>
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>Balance Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Alert>{renderBalanceMessage()}</Alert>
+      </CardContent>
+    </Card>
   );
 };
 

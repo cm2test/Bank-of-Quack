@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --background: 0 0% 100%; /* fallback for light mode */
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 222 89% 53%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 20% 50%;
+  --accent: 222 89% 53%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 222 89% 53%;
+  --radius: 0.5rem;
+  --chart-1: 222 89% 53%;
+  --chart-2: 340 82% 52%;
+  --chart-3: 48 100% 67%;
+  --chart-4: 141 71% 48%;
+  --chart-5: 271 91% 65%;
+}
+
+.dark {
+  --background: 222 47% 7%; /* deep black-blue */
+  --foreground: 0 0% 100%;
+  --card: 222 47% 10%;
+  --card-foreground: 0 0% 100%;
+  --popover: 222 47% 10%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 222 89% 60%; /* vibrant blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 80%;
+  --accent: 271 91% 65%; /* purple accent */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 47% 15%;
+  --input: 222 47% 15%;
+  --ring: 222 89% 60%;
+  --radius: 0.5rem;
+  --chart-1: 222 89% 60%;
+  --chart-2: 340 82% 60%;
+  --chart-3: 48 100% 67%;
+  --chart-4: 141 71% 48%;
+  --chart-5: 271 91% 65%;
+}

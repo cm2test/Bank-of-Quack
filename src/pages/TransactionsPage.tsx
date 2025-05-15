@@ -2,22 +2,23 @@
 import React from "react"; // Added React import for clarity, though often implicit
 import { useOutletContext } from "react-router-dom";
 import TransactionForm from "../components/TransactionForm";
-import { Transaction } from "../App";
 
 interface TransactionsPageContext {
-  addTransaction: (t: Partial<Transaction>) => void;
+  addTransaction: (t: Partial<any>) => void;
 }
 
 const TransactionsPage: React.FC = () => {
-  // addTransaction is used by TransactionForm when NOT editing.
-  // editingTransaction, updateTransaction are handled internally by TransactionForm via context.
-  const { addTransaction } = useOutletContext<TransactionsPageContext>();
+  // Get the full context from Outlet
+  const context = useOutletContext<any>();
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto w-full p-4">
       {/* The TransactionForm will dynamically change its title and behavior 
           based on whether `editingTransaction` is set in the context */}
-      <TransactionForm onAddTransaction={addTransaction} />
+      <TransactionForm
+        onAddTransaction={context.addTransaction}
+        context={context}
+      />
     </div>
   );
 };
