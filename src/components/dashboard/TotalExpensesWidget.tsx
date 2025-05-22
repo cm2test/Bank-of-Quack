@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOutletContext } from "react-router-dom";
+import { formatMoney } from "@/lib/utils";
 
 interface TotalExpensesWidgetProps {
   transactionsInDateRange: any[];
@@ -66,7 +67,7 @@ const TotalExpensesWidget: React.FC<TotalExpensesWidgetProps> = ({
         <CardTitle>Total Expenses</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold">${totalNetExpenses.toFixed(2)}</p>
+        <p className="text-2xl font-bold">{formatMoney(totalNetExpenses)}</p>
       </CardContent>
     </Card>
   );

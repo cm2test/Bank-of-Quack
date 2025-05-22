@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOutletContext } from "react-router-dom";
+import { formatMoney } from "@/lib/utils";
 
 interface CategoryBreakdownWidgetProps {
   transactionsInDateRange: any[];
@@ -121,7 +122,7 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
               <li key={item.category} className="flex justify-between">
                 <span>{item.category}</span>
                 <span>
-                  ${item.amount.toFixed(2)}
+                  {formatMoney(item.amount)}
                   <span className="ml-2 text-xs text-muted-foreground">
                     ({item.percentage.toFixed(1)}%)
                   </span>

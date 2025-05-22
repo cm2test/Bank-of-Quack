@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { formatMoney } from "@/lib/utils";
 
 interface BalanceSummaryProps {
   transactionsInDateRange: any[];
@@ -64,9 +65,9 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
     if (balanceSummary === 0) {
       return `${user1} and ${user2} are all square!`;
     } else if (balanceSummary > 0) {
-      return `${user1} owes ${user2} $${balanceSummary.toFixed(2)}.`;
+      return `${user1} owes ${user2} ${formatMoney(balanceSummary)}.`;
     } else {
-      return `${user2} owes ${user1} $${Math.abs(balanceSummary).toFixed(2)}.`;
+      return `${user2} owes ${user1} ${formatMoney(Math.abs(balanceSummary))}.`;
     }
   };
 

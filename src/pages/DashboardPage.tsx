@@ -52,9 +52,11 @@ const DashboardPage: React.FC = () => {
   const [personInvolvementFilter, setPersonInvolvementFilter] = useState<{
     user1: boolean;
     user2: boolean;
+    shared: boolean;
   }>({
     user1: true,
     user2: true,
+    shared: true,
   });
   const [categorySectorFilter, setCategorySectorFilter] =
     useState<string>("all");
@@ -134,80 +136,40 @@ const DashboardPage: React.FC = () => {
   // This list will contain only 'expense' type transactions with amounts adjusted based on person filter.
   const expensesForWidgets = useMemo(() => {
     if (!effectiveTransactions || !userNames || userNames.length < 2) return [];
-
-    // const [user1Name, user2Name] = userNames; // These were unused here, causing ESLint error. userNames[0] and userNames[1] are used directly.
-    const onlyUser1Selected =
-      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
-    const onlyUser2Selected =
-      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
-    const combinedView =
-      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
-      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2);
-
     return effectiveTransactions
       .filter((t) => t.transaction_type === "expense")
-      .map((expense) => {
-        let individualAmount = expense.amount;
-        if (onlyUser1Selected) {
-          if (expense.split_type === "user1_only") {
-            // Full amount for User1
-          } else if (expense.split_type === "splitEqually") {
-            individualAmount /= 2;
-          } else if (expense.split_type === "user2_only") {
-            return null;
-          }
-        } else if (onlyUser2Selected) {
-          if (expense.split_type === "user2_only") {
-            // Full amount for User2
-          } else if (expense.split_type === "splitEqually") {
-            individualAmount /= 2;
-          } else if (expense.split_type === "user1_only") {
-            return null;
-          }
-        } else if (combinedView) {
-          // Keep full amount for combined view
-        } else {
-          return null;
-        }
-        return { ...expense, amount: individualAmount };
-      })
-      .filter(
-        (expense): expense is TransactionWithExtras =>
-          expense !== null && expense.amount !== undefined
-      );
+      .filter((expense) => {
+        if (
+          expense.split_type === "user1_only" &&
+          personInvolvementFilter.user1
+        )
+          return true;
+        if (
+          expense.split_type === "user2_only" &&
+          personInvolvementFilter.user2
+        )
+          return true;
+        if (
+          expense.split_type === "splitEqually" &&
+          personInvolvementFilter.shared
+        )
+          return true;
+        return false;
+      });
   }, [effectiveTransactions, personInvolvementFilter, userNames]);
 
   // 4. Filter by Person Involvement for the general TransactionList display (use raw, unadjusted transactions)
   const transactionsByPersonForDisplayRaw = useMemo(() => {
     if (!userNames || userNames.length < 2) return transactionsInDateRange;
-    if (
-      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
-      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
-    ) {
-      return transactionsInDateRange;
-    }
     return transactionsInDateRange.filter((t) => {
       const type = t.transaction_type || "expense";
-      if (personInvolvementFilter.user1) {
-        if (t.paid_by_user_name === userNames[0]) return true;
-        if (
-          type === "expense" &&
-          (t.split_type === "user1_only" || t.split_type === "splitEqually")
-        )
-          return true;
-        if (type === "settlement" && t.paid_to_user_name === userNames[0])
-          return true;
-      }
-      if (personInvolvementFilter.user2) {
-        if (t.paid_by_user_name === userNames[1]) return true;
-        if (
-          type === "expense" &&
-          (t.split_type === "user2_only" || t.split_type === "splitEqually")
-        )
-          return true;
-        if (type === "settlement" && t.paid_to_user_name === userNames[1])
-          return true;
-      }
+      if (type !== "expense") return true; // non-expense transactions are always included
+      if (t.split_type === "user1_only" && personInvolvementFilter.user1)
+        return true;
+      if (t.split_type === "user2_only" && personInvolvementFilter.user2)
+        return true;
+      if (t.split_type === "splitEqually" && personInvolvementFilter.shared)
+        return true;
       return false;
     });
   }, [transactionsInDateRange, personInvolvementFilter, userNames]);
@@ -381,6 +343,19 @@ const DashboardPage: React.FC = () => {
                     <Label htmlFor="filterUser2">{userNames[1]}</Label>
                   </div>
                 )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="filterShared"
+                    checked={personInvolvementFilter.shared}
+                    onCheckedChange={(checked) =>
+                      setPersonInvolvementFilter((prev) => ({
+                        ...prev,
+                        shared: !!checked,
+                      }))
+                    }
+                  />
+                  <Label htmlFor="filterShared">Shared</Label>
+                </div>
               </div>
             </div>
             <div className="flex flex-col flex-1 min-w-[200px]">
