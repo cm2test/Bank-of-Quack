@@ -136,26 +136,38 @@ const DashboardPage: React.FC = () => {
   // This list will contain only 'expense' type transactions with amounts adjusted based on person filter.
   const expensesForWidgets = useMemo(() => {
     if (!effectiveTransactions || !userNames || userNames.length < 2) return [];
+    const onlyUser1 =
+      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
+    const onlyUser2 =
+      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
+    const bothUsers =
+      personInvolvementFilter.user1 && personInvolvementFilter.user2;
+    const shared = personInvolvementFilter.shared;
     return effectiveTransactions
       .filter((t) => t.transaction_type === "expense")
-      .filter((expense) => {
+      .map((expense) => {
         if (
           expense.split_type === "user1_only" &&
           personInvolvementFilter.user1
-        )
-          return true;
+        ) {
+          return expense;
+        }
         if (
           expense.split_type === "user2_only" &&
           personInvolvementFilter.user2
-        )
-          return true;
-        if (
-          expense.split_type === "splitEqually" &&
-          personInvolvementFilter.shared
-        )
-          return true;
-        return false;
-      });
+        ) {
+          return expense;
+        }
+        if (expense.split_type === "splitEqually" && shared) {
+          if (onlyUser1 || onlyUser2) {
+            return { ...expense, amount: expense.amount / 2 };
+          }
+          // both users or only shared checked
+          return expense;
+        }
+        return null;
+      })
+      .filter((expense): expense is TransactionWithExtras => expense !== null);
   }, [effectiveTransactions, personInvolvementFilter, userNames]);
 
   // 4. Filter by Person Involvement for the general TransactionList display (use raw, unadjusted transactions)
