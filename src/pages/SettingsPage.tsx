@@ -465,7 +465,10 @@ const SettingsPage: React.FC = () => {
           ) : (
             <ul className="space-y-4">
               {sectors.map((sec) => (
-                <li key={sec.id}>
+                <li
+                  key={sec.id}
+                  className="pb-4 mb-4 border-b border-border last:border-b-0 last:mb-0 last:pb-0"
+                >
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -480,32 +483,38 @@ const SettingsPage: React.FC = () => {
                         alert("Please select a category to add.");
                       }
                     }}
-                    className="flex gap-2 items-center"
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
                   >
-                    <span className="w-32 font-medium">{sec.name}</span>
-                    <Select
-                      value={selectedCategoryForSector[sec.id] || ""}
-                      onValueChange={(val) =>
-                        setSelectedCategoryForSector((prev) => ({
-                          ...prev,
-                          [sec.id]: val,
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="w-48 bg-background">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button type="submit" size="sm">
-                      Add
-                    </Button>
+                    <span className="font-medium sm:flex-1">{sec.name}</span>
+                    <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:justify-end sm:items-center sm:gap-2">
+                      <Select
+                        value={selectedCategoryForSector[sec.id] || ""}
+                        onValueChange={(val) =>
+                          setSelectedCategoryForSector((prev) => ({
+                            ...prev,
+                            [sec.id]: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full sm:w-48 bg-background">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="w-full sm:w-auto sm:ml-2"
+                      >
+                        Add
+                      </Button>
+                    </div>
                   </form>
                   {sec.category_ids && sec.category_ids.length > 0 && (
                     <div className="ml-8 mt-1 text-xs text-muted-foreground">
