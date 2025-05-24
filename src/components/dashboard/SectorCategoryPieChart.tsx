@@ -30,13 +30,12 @@ const CHART_COLORS = [
   "#FFF176", // Bright Yellow
   "#FFEB3B", // Standard Yellow
   "#FFD54F", // Gold Yellow
-
+  "#AED581", // Light Green
+  "#004D40", // Deep Teal (background match)
   //"#FFF9C4", // Pale Yellow
   //"#4DD0E1", // Cyan
   //"#81D4FA", // Light Blue
-  //"#AED581", // Light Green
   //"#64B5F6", // Blue
-  //"#004D40", // Deep Teal (background match)
   // Add more if needed
 ];
 
