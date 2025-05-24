@@ -24,6 +24,7 @@ import TotalExpensesWidget from "../components/dashboard/TotalExpensesWidget";
 import CategoryBreakdownWidget from "../components/dashboard/CategoryBreakdownWidget";
 import TransactionList from "../components/TransactionList";
 import { supabase } from "../supabaseClient";
+import SectorCategoryPieChart from "../components/dashboard/SectorCategoryPieChart";
 
 // Use 'any' for types to resolve linter errors
 // type Transaction = any;
@@ -290,7 +291,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full p-4">
+    <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
       <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
       <Card className="mb-6">
         <CardHeader>
@@ -415,6 +416,12 @@ const DashboardPage: React.FC = () => {
       />
       <CategoryBreakdownWidget
         transactionsInDateRange={expensesForWidgetsFiltered}
+      />
+      {/* Pie chart for sector/category breakdown */}
+      <SectorCategoryPieChart
+        transactionsInDateRange={expensesForWidgetsFiltered}
+        categories={categories}
+        sectors={sectors}
       />
       <TransactionList
         transactions={finalFilteredTransactionsForDisplay}
