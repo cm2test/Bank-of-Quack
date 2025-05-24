@@ -423,7 +423,11 @@ const DashboardPage: React.FC = () => {
         categories={categories}
         sectors={sectors}
       />
+      <div className="mt-8 mb-4">
+        <CardTitle className="text-xl">Transactions</CardTitle>
+      </div>
       <TransactionList
+        className="mt-0"
         transactions={finalFilteredTransactionsForDisplay}
         deleteTransaction={deleteTransaction}
       />

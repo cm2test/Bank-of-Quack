@@ -108,32 +108,8 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
       .sort((a, b) => b.amount - a.amount);
   }, [transactionsInDateRange, userNames, personInvolvementFilter]);
 
-  return (
-    <Card className="mb-4">
-      <CardHeader>
-        <CardTitle>Category Breakdown</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {categoryBreakdown.length === 0 ? (
-          <p className="text-muted-foreground">No expenses to show.</p>
-        ) : (
-          <ul className="space-y-1">
-            {categoryBreakdown.map((item) => (
-              <li key={item.category} className="flex justify-between">
-                <span>{item.category}</span>
-                <span>
-                  {formatMoney(item.amount)}
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({item.percentage.toFixed(1)}%)
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
+  // Hide this widget
+  return null;
 };
 
 export default CategoryBreakdownWidget;

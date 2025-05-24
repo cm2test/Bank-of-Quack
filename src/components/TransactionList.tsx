@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 interface TransactionListProps {
   transactions: any[];
   deleteTransaction: (id: string) => void;
+  className?: string;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   deleteTransaction,
+  className = "",
 }) => {
   const {
     userNames,
@@ -65,7 +67,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   );
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${className}`}>
       {sortedTransactions.map((t) => {
         const type = t.transaction_type || "expense";
         let reimbursedExpenseDescription = null;
