@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface TransactionFormProps {
   onAddTransaction: (t: Partial<any>) => void;
@@ -73,6 +74,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [splitType, setSplitType] = useState<string>("");
   const [selectedReimbursesTransactionId, setSelectedReimbursesTransactionId] =
     useState<string>("none");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const isEditing = !!editingTransaction;
   const lastEditIdRef = useRef<string | null>(null);
@@ -200,10 +202,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setDate(new Date().toISOString().slice(0, 10));
     setDescription("");
     setAmount("");
-    setSelectedCategoryId(categories.length > 0 ? categories[0].id : "");
-    setPaidOrReceivedBy(userNames.length > 0 ? userNames[0] : "");
+    setSelectedCategoryId("");
+    setPaidOrReceivedBy("");
     setPaidToUserName("");
-    setSplitType(EXPENSE_SPLIT_TYPES[0]?.value || "splitEqually");
+    setSplitType("");
     setSelectedReimbursesTransactionId("none");
     if (handleSetEditingTransaction) {
       handleSetEditingTransaction(null);
@@ -298,13 +300,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
 
     if (isEditing) {
       updateTransaction(transactionDataPayload);
-      alert("Transaction updated!");
     } else {
       onAddTransaction(transactionDataPayload);
-      alert("Transaction added!");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     }
     resetFormAndState();
-    navigate("/");
   };
 
   const handleCancelEdit = () => {
@@ -322,198 +323,229 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       : "Paid By:";
 
   return (
-    <Card className="max-w-xl mx-auto w-full">
-      <CardHeader>
-        <CardTitle>
-          {isEditing
-            ? `Edit ${editingTransaction?.transaction_type || "Transaction"}`
-            : `Add New ${
-                transactionType.charAt(0).toUpperCase() +
-                transactionType.slice(1)
-              }`}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="transactionType">Transaction Type</Label>
-            <Select
-              value={transactionType}
-              onValueChange={setTransactionType}
-              disabled={isEditing}
-            >
-              <SelectTrigger id="transactionType" className="bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                {TRANSACTION_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <>
+      {showSuccess && (
+        <div className="sticky top-0 left-0 w-full flex justify-center z-50">
+          <div className="max-w-md w-full m-4">
+            <Alert>
+              <AlertTitle>Transaction Added!</AlertTitle>
+              <AlertDescription>
+                Your transaction was successfully added.
+                <button
+                  className="ml-4 text-xs underline"
+                  onClick={() => setShowSuccess(false)}
+                >
+                  Dismiss
+                </button>
+              </AlertDescription>
+            </Alert>
           </div>
-          <div>
-            <Label htmlFor="date">Date</Label>
-            <Input
-              type="date"
-              id="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Input
-              type="text"
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="amount">Amount</Label>
-            <Input
-              type="number"
-              id="amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0.01"
-              step="0.01"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="paidOrReceivedBy">{paidOrReceivedByLabel}</Label>
-            <Select
-              value={paidOrReceivedBy}
-              onValueChange={setPaidOrReceivedBy}
-              required
-            >
-              <SelectTrigger id="paidOrReceivedBy" className="bg-background">
-                <SelectValue placeholder="-- Select User --" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                {userNames.map((user: any) => (
-                  <SelectItem key={user} value={user}>
-                    {user}
-                  </SelectItem>
-                ))}
-                {transactionType === "expense" && (
-                  <SelectItem key="shared" value="Shared">
-                    Shared
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          {transactionType === "settlement" && (
+        </div>
+      )}
+      <Card className="max-w-xl mx-auto w-full">
+        <CardHeader>
+          <CardTitle>
+            {isEditing
+              ? `Edit ${editingTransaction?.transaction_type || "Transaction"}`
+              : `Add New ${
+                  transactionType.charAt(0).toUpperCase() +
+                  transactionType.slice(1)
+                }`}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="paidToUserName">Payee</Label>
+              <Label htmlFor="transactionType">Transaction Type</Label>
               <Select
-                value={paidToUserName}
-                onValueChange={setPaidToUserName}
+                value={transactionType}
+                onValueChange={setTransactionType}
+                disabled={isEditing}
+              >
+                <SelectTrigger id="transactionType" className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                  {TRANSACTION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <Input
+                type="date"
+                id="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm appearance-none"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Input
+                type="text"
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                type="number"
+                id="amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min="0.01"
+                step="0.01"
+                required
+                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="paidOrReceivedBy">{paidOrReceivedByLabel}</Label>
+              <Select
+                value={paidOrReceivedBy}
+                onValueChange={setPaidOrReceivedBy}
                 required
               >
-                <SelectTrigger id="paidToUserName" className="bg-background">
+                <SelectTrigger id="paidOrReceivedBy" className="bg-background">
                   <SelectValue placeholder="-- Select User --" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                  {availablePayees.map((user: any) => (
+                  {userNames.map((user: any) => (
                     <SelectItem key={user} value={user}>
                       {user}
                     </SelectItem>
                   ))}
+                  {transactionType === "expense" && (
+                    <SelectItem key="shared" value="Shared">
+                      Shared
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
-          )}
-          {transactionType === "expense" && (
-            <>
+            {transactionType === "settlement" && (
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="paidToUserName">Payee</Label>
                 <Select
-                  value={selectedCategoryId}
-                  onValueChange={setSelectedCategoryId}
+                  value={paidToUserName}
+                  onValueChange={setPaidToUserName}
                   required
                 >
-                  <SelectTrigger id="category" className="bg-background">
-                    <SelectValue placeholder="-- Select a Category --" />
+                  <SelectTrigger id="paidToUserName" className="bg-background">
+                    <SelectValue placeholder="-- Select User --" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                    {categories.map((cat: any) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
+                    {availablePayees.map((user: any) => (
+                      <SelectItem key={user} value={user}>
+                        {user}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="splitType">Split Type</Label>
-                <Select value={splitType} onValueChange={setSplitType} required>
-                  <SelectTrigger id="splitType" className="bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                    {EXPENSE_SPLIT_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-          {transactionType === "reimbursement" && (
-            <div>
-              <Label htmlFor="reimbursesTransaction">
-                Reimburses Expense (Optional)
-              </Label>
-              <Select
-                value={selectedReimbursesTransactionId}
-                onValueChange={setSelectedReimbursesTransactionId}
-              >
-                <SelectTrigger
-                  id="reimbursesTransaction"
-                  className="bg-background"
-                >
-                  <SelectValue placeholder="-- None (General Reimbursement) --" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                  <SelectItem value="none">
-                    -- None (General Reimbursement) --
-                  </SelectItem>
-                  {availableExpensesForReimbursement.map((exp: any) => (
-                    <SelectItem key={exp.id} value={exp.id}>
-                      {exp.date} - {exp.description} (${exp.amount.toFixed(2)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="flex gap-2 mt-4">
-            <Button type="submit">
-              {isEditing ? "Update Transaction" : "Add Transaction"}
-            </Button>
-            {isEditing && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancelEdit}
-              >
-                Cancel Edit
-              </Button>
             )}
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            {transactionType === "expense" && (
+              <>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={selectedCategoryId}
+                    onValueChange={setSelectedCategoryId}
+                    required
+                  >
+                    <SelectTrigger id="category" className="bg-background">
+                      <SelectValue placeholder="-- Select a Category --" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="splitType">Split Type</Label>
+                  <Select
+                    value={splitType}
+                    onValueChange={setSplitType}
+                    required
+                  >
+                    <SelectTrigger id="splitType" className="bg-background">
+                      <SelectValue placeholder="-- Select a Split Type --" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                      {EXPENSE_SPLIT_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            {transactionType === "reimbursement" && (
+              <div>
+                <Label htmlFor="reimbursesTransaction">
+                  Reimburses Expense (Optional)
+                </Label>
+                <Select
+                  value={selectedReimbursesTransactionId}
+                  onValueChange={setSelectedReimbursesTransactionId}
+                >
+                  <SelectTrigger
+                    id="reimbursesTransaction"
+                    className="bg-background"
+                  >
+                    <SelectValue placeholder="-- None (General Reimbursement) --" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                    <SelectItem value="none">
+                      -- None (General Reimbursement) --
+                    </SelectItem>
+                    {availableExpensesForReimbursement.map((exp: any) => (
+                      <SelectItem key={exp.id} value={exp.id}>
+                        {exp.date} - {exp.description} (${exp.amount.toFixed(2)}
+                        )
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex gap-2 mt-4 justify-center">
+              <Button
+                type="submit"
+                className="bg-[#FFD54F] hover:bg-[#FFD54F] active:bg-[#FFD54F] text-black font-bold rounded shadow transition-colors duration-200 border-none"
+              >
+                {isEditing ? "Update Transaction" : "Add Transaction"}
+              </Button>
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel Edit
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
