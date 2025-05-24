@@ -268,40 +268,60 @@ const App: React.FC = () => {
       <nav
         className="flex items-center justify-between py-6 border-b z-10 relative px-8"
         style={{
-          background: "linear-gradient(90deg, #facc15 0%, #fde68a 100%)",
+          background: "#004D40",
         }}
       >
-        <span className="text-3xl font-extrabold text-black select-none">
+        <span className="text-3xl font-extrabold text-white select-none">
           Bank of Quack
         </span>
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <Link
+            <Button
               key={link.to}
-              to={link.to}
-              className={`text-lg font-semibold text-black hover:text-yellow-900 transition-colors ${
-                location.pathname === link.to ? "font-bold" : ""
-              }`}
+              asChild
+              variant={location.pathname === link.to ? "secondary" : "ghost"}
+              className={`text-lg font-semibold ${
+                location.pathname === link.to
+                  ? "bg-white text-[#004D40]"
+                  : "text-white hover:bg-white/10"
+              } transition-colors`}
               style={{ cursor: "pointer" }}
             >
-              {link.label}
-            </Link>
+              <Link to={link.to}>{link.label}</Link>
+            </Button>
           ))}
         </div>
         <div className="md:hidden flex items-center">
           <MobileMenu navLinks={navLinks} location={location} />
         </div>
       </nav>
+      {/* Hero section with BankerQuack image */}
+      <div
+        className="w-full flex items-center justify-center bg-[#004D40]"
+        style={{
+          width: "100vw",
+          overflow: "hidden",
+          background: "#004D40",
+        }}
+      >
+        <img
+          src="/BankerQuack.png"
+          alt="Banker Quack"
+          style={{
+            width: "100vw",
+            height: "auto",
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      </div>
+      {/* Main content below the hero image */}
       <main
         className="flex-1 flex flex-col items-center justify-center p-8 w-full relative"
         style={{
-          backgroundImage: "url(/BankerQuack.png)",
-          backgroundRepeat: "repeat-y",
-          backgroundPosition: "center top",
-          backgroundSize: bgHeight ? `100vw ${bgHeight}px` : undefined,
+          background: "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
         }}
       >
-        <div className="absolute inset-0 bg-black/40 pointer-events-none z-0" />
         <div className="relative z-10 w-full flex flex-col items-center">
           <Outlet
             context={{
@@ -339,11 +359,11 @@ function MobileMenu({
   return (
     <>
       <button
-        className="p-2 rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        className="p-2 rounded-md hover:bg-[#004D40]/20 focus:outline-none focus:ring-2 focus:ring-[#004D40]"
         onClick={() => setOpen((o) => !o)}
         aria-label="Open navigation menu"
       >
-        <Menu className="w-7 h-7 text-black" />
+        <Menu className="w-7 h-7 text-white" />
       </button>
       {open &&
         ReactDOM.createPortal(
@@ -352,13 +372,13 @@ function MobileMenu({
               className="fixed inset-0 z-[9998] bg-black/20"
               onClick={() => setOpen(false)}
             />
-            <div className="fixed right-4 top-20 bg-gradient-to-r from-[#facc15] to-[#fde68a] border border-yellow-300 rounded-lg shadow-2xl z-[9999] min-w-[180px] flex flex-col">
+            <div className="fixed right-4 top-20 bg-[#004D40] border border-[#004D40] rounded-lg shadow-2xl z-[9999] min-w-[180px] flex flex-col">
               {navLinks.map((link: { to: string; label: string }) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-6 py-3 text-lg font-semibold text-black hover:bg-yellow-200 transition-colors ${
-                    location.pathname === link.to ? "font-bold" : ""
+                  className={`px-6 py-3 text-lg font-semibold text-white hover:bg-white/10 transition-colors ${
+                    location.pathname === link.to ? "font-bold bg-white/10" : ""
                   }`}
                   style={{ cursor: "pointer" }}
                   onClick={() => setOpen(false)}

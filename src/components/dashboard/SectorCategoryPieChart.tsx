@@ -24,11 +24,19 @@ import {
 import { Button } from "@/components/ui/button";
 
 const CHART_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "#26A69A", // Teal
+  "#80CBC4", // Light Teal
+  "#B2DFDB", // Pale Teal
+  "#FFF176", // Bright Yellow
+  "#FFEB3B", // Standard Yellow
+  "#FFD54F", // Gold Yellow
+
+  //"#FFF9C4", // Pale Yellow
+  //"#4DD0E1", // Cyan
+  //"#81D4FA", // Light Blue
+  //"#AED581", // Light Green
+  //"#64B5F6", // Blue
+  //"#004D40", // Deep Teal (background match)
   // Add more if needed
 ];
 

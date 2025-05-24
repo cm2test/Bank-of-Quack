@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "../supabaseClient";
 
 interface SettingsPageContext {
   userNames: string[];
@@ -64,12 +65,31 @@ const SettingsPage: React.FC = () => {
   const [deleteSectorDialog, setDeleteSectorDialog] = useState<any | null>(
     null
   );
+  const [user1Image, setUser1Image] = useState<string | null>(null);
+  const [user2Image, setUser2Image] = useState<string | null>(null);
+  const [user1ImageUrl, setUser1ImageUrl] = useState<string | null>(null);
+  const [user2ImageUrl, setUser2ImageUrl] = useState<string | null>(null);
+  const [uploadingUser, setUploadingUser] = useState<1 | 2 | null>(null);
 
   useEffect(() => {
     if (userNames && userNames.length >= 2) {
       setUser1NameInput(userNames[0]);
       setUser2NameInput(userNames[1]);
     }
+    // Fetch avatar URLs from app_settings
+    const fetchAvatars = async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["user1_avatar_url", "user2_avatar_url"]);
+      if (data) {
+        const u1 = data.find((s: any) => s.key === "user1_avatar_url");
+        const u2 = data.find((s: any) => s.key === "user2_avatar_url");
+        if (u1 && u1.value) setUser1ImageUrl(u1.value);
+        if (u2 && u2.value) setUser2ImageUrl(u2.value);
+      }
+    };
+    fetchAvatars();
   }, [userNames]);
 
   const handleUserNamesSave = (e: FormEvent<HTMLFormElement>) => {
@@ -113,6 +133,53 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // Helper to upload image to Supabase Storage and update app_settings
+  const uploadAvatar = async (file: File, user: 1 | 2) => {
+    setUploadingUser(user);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `user${user}_avatar_${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+    if (uploadError) {
+      alert("Failed to upload image: " + uploadError.message);
+      setUploadingUser(null);
+      return;
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+    const publicUrl = publicUrlData?.publicUrl;
+    if (publicUrl) {
+      // Update app_settings
+      const key = user === 1 ? "user1_avatar_url" : "user2_avatar_url";
+      await supabase
+        .from("app_settings")
+        .upsert({ key, value: publicUrl }, { onConflict: "key" });
+      if (user === 1) setUser1ImageUrl(publicUrl);
+      if (user === 2) setUser2ImageUrl(publicUrl);
+    }
+    setUploadingUser(null);
+  };
+
+  // Helper to handle image upload and preview
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setImage: React.Dispatch<React.SetStateAction<string | null>>,
+    user: 1 | 2
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      uploadAvatar(file, user);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto w-full p-4 space-y-8">
       <h2 className="text-2xl font-bold mb-4">Settings</h2>
@@ -124,25 +191,93 @@ const SettingsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUserNamesSave} className="space-y-4">
-            <div>
-              <Label htmlFor="user1Name">User 1 Name</Label>
-              <Input
-                type="text"
-                id="user1Name"
-                value={user1NameInput}
-                onChange={(e) => setUser1NameInput(e.target.value)}
-                required
-              />
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+                  {user1ImageUrl ? (
+                    <img
+                      src={user1ImageUrl}
+                      alt="User 1 avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : user1Image ? (
+                    <img
+                      src={user1Image}
+                      alt="User 1 avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl text-muted-foreground">🦆</span>
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  id="user1Image"
+                  className="w-32 text-xs"
+                  onChange={(e) => handleImageChange(e, setUser1Image, 1)}
+                  disabled={uploadingUser === 1}
+                />
+                {uploadingUser === 1 && (
+                  <span className="text-xs text-muted-foreground">
+                    Uploading...
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="user1Name">User 1 Name</Label>
+                <Input
+                  type="text"
+                  id="user1Name"
+                  value={user1NameInput}
+                  onChange={(e) => setUser1NameInput(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="user2Name">User 2 Name</Label>
-              <Input
-                type="text"
-                id="user2Name"
-                value={user2NameInput}
-                onChange={(e) => setUser2NameInput(e.target.value)}
-                required
-              />
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+                  {user2ImageUrl ? (
+                    <img
+                      src={user2ImageUrl}
+                      alt="User 2 avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : user2Image ? (
+                    <img
+                      src={user2Image}
+                      alt="User 2 avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl text-muted-foreground">🦆</span>
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  id="user2Image"
+                  className="w-32 text-xs"
+                  onChange={(e) => handleImageChange(e, setUser2Image, 2)}
+                  disabled={uploadingUser === 2}
+                />
+                {uploadingUser === 2 && (
+                  <span className="text-xs text-muted-foreground">
+                    Uploading...
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="user2Name">User 2 Name</Label>
+                <Input
+                  type="text"
+                  id="user2Name"
+                  value={user2NameInput}
+                  onChange={(e) => setUser2NameInput(e.target.value)}
+                  required
+                />
+              </div>
             </div>
             <Button type="submit">Save User Names</Button>
           </form>
