@@ -1,8 +1,10 @@
 // src/App.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, Location } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "./supabaseClient";
+import { Menu } from "lucide-react";
+import ReactDOM from "react-dom";
 // Import types if needed
 // import { Transaction, Category, Sector } from "./types";
 
@@ -27,6 +29,7 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<any | null>(
     null
   );
+  const [bgHeight, setBgHeight] = useState<number | null>(null);
   const handleSetEditingTransaction = (t: any) => setEditingTransaction(t);
 
   const addCategory = useCallback(async (name: string) => {
@@ -225,6 +228,28 @@ const App: React.FC = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const img = new window.Image();
+    img.src = "/BankerQuack.png";
+    img.onload = function () {
+      const aspectRatio = img.width / img.height;
+      const width = window.innerWidth;
+      const height = width / aspectRatio;
+      setBgHeight(height);
+    };
+    // Recalculate on resize
+    const handleResize = () => {
+      if (img.width && img.height) {
+        const aspectRatio = img.width / img.height;
+        const width = window.innerWidth;
+        const height = width / aspectRatio;
+        setBgHeight(height);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const location = useLocation();
 
   if (loading)
@@ -240,40 +265,113 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <nav className="flex items-center justify-center gap-4 py-6 border-b">
-        {navLinks.map((link) => (
-          <Button
-            key={link.to}
-            asChild
-            variant={location.pathname === link.to ? "default" : "outline"}
-          >
-            <Link to={link.to}>{link.label}</Link>
-          </Button>
-        ))}
+      <nav
+        className="flex items-center justify-between py-6 border-b z-10 relative px-8"
+        style={{
+          background: "linear-gradient(90deg, #facc15 0%, #fde68a 100%)",
+        }}
+      >
+        <span className="text-3xl font-extrabold text-black select-none">
+          Bank of Quack
+        </span>
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`text-lg font-semibold text-black hover:text-yellow-900 transition-colors ${
+                location.pathname === link.to ? "font-bold" : ""
+              }`}
+              style={{ cursor: "pointer" }}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+        <div className="md:hidden flex items-center">
+          <MobileMenu navLinks={navLinks} location={location} />
+        </div>
       </nav>
-      <main className="flex-1 flex flex-col items-center justify-center p-8">
-        <Outlet
-          context={{
-            transactions,
-            userNames,
-            categories,
-            sectors,
-            addCategory,
-            deleteCategory,
-            addSector,
-            deleteSector,
-            addCategoryToSector,
-            removeCategoryFromSector,
-            updateUserNames,
-            handleSetEditingTransaction,
-            editingTransaction,
-            addTransaction,
-            updateTransaction,
-          }}
-        />
+      <main
+        className="flex-1 flex flex-col items-center justify-center p-8 w-full relative"
+        style={{
+          backgroundImage: "url(/BankerQuack.png)",
+          backgroundRepeat: "repeat-y",
+          backgroundPosition: "center top",
+          backgroundSize: bgHeight ? `100vw ${bgHeight}px` : undefined,
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40 pointer-events-none z-0" />
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <Outlet
+            context={{
+              transactions,
+              userNames,
+              categories,
+              sectors,
+              addCategory,
+              deleteCategory,
+              addSector,
+              deleteSector,
+              addCategoryToSector,
+              removeCategoryFromSector,
+              updateUserNames,
+              handleSetEditingTransaction,
+              editingTransaction,
+              addTransaction,
+              updateTransaction,
+            }}
+          />
+        </div>
       </main>
     </div>
   );
 };
+
+function MobileMenu({
+  navLinks,
+  location,
+}: {
+  navLinks: { to: string; label: string }[];
+  location: Location;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        className="p-2 rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Open navigation menu"
+      >
+        <Menu className="w-7 h-7 text-black" />
+      </button>
+      {open &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] bg-black/20"
+              onClick={() => setOpen(false)}
+            />
+            <div className="fixed right-4 top-20 bg-gradient-to-r from-[#facc15] to-[#fde68a] border border-yellow-300 rounded-lg shadow-2xl z-[9999] min-w-[180px] flex flex-col">
+              {navLinks.map((link: { to: string; label: string }) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-6 py-3 text-lg font-semibold text-black hover:bg-yellow-200 transition-colors ${
+                    location.pathname === link.to ? "font-bold" : ""
+                  }`}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
+    </>
+  );
+}
 
 export default App;
