@@ -190,10 +190,153 @@ const SettingsPage: React.FC = () => {
           <CardTitle>User Names</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleUserNamesSave} className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+          <form onSubmit={handleUserNamesSave} className="space-y-0">
+            {/* Mobile layout: stacked, visible below md */}
+            <div className="block md:hidden">
+              <div className="flex flex-col items-center gap-4 mb-6">
+                <div className="flex flex-col items-center justify-center w-full">
+                  <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
+                    {user1ImageUrl ? (
+                      <img
+                        src={user1ImageUrl}
+                        alt="User 1 avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : user1Image ? (
+                      <img
+                        src={user1Image}
+                        alt="User 1 avatar preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl text-muted-foreground">🦆</span>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="user1Image"
+                    className="sr-only"
+                    onChange={(e) => handleImageChange(e, setUser1Image, 1)}
+                    disabled={uploadingUser === 1}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      document.getElementById("user1Image")?.click()
+                    }
+                    disabled={uploadingUser === 1}
+                    className="w-32 text-xs mt-1"
+                  >
+                    {user1ImageUrl || user1Image
+                      ? "Change File"
+                      : "Choose File"}
+                  </Button>
+                  {user1Image && !user1ImageUrl && (
+                    <span className="text-xs text-muted-foreground">
+                      Selected
+                    </span>
+                  )}
+                  {uploadingUser === 1 && (
+                    <span className="text-xs text-muted-foreground">
+                      Uploading...
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col items-center w-full">
+                  <Label
+                    htmlFor="user1Name"
+                    className="mb-2 w-full text-center"
+                  >
+                    User 1 Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id="user1Name"
+                    value={user1NameInput}
+                    onChange={(e) => setUser1NameInput(e.target.value)}
+                    required
+                    className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-4 mb-6">
+                <div className="flex flex-col items-center justify-center w-full">
+                  <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
+                    {user2ImageUrl ? (
+                      <img
+                        src={user2ImageUrl}
+                        alt="User 2 avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : user2Image ? (
+                      <img
+                        src={user2Image}
+                        alt="User 2 avatar preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl text-muted-foreground">🦆</span>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="user2Image"
+                    className="sr-only"
+                    onChange={(e) => handleImageChange(e, setUser2Image, 2)}
+                    disabled={uploadingUser === 2}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      document.getElementById("user2Image")?.click()
+                    }
+                    disabled={uploadingUser === 2}
+                    className="w-32 text-xs mt-1"
+                  >
+                    {user2ImageUrl || user2Image
+                      ? "Change File"
+                      : "Choose File"}
+                  </Button>
+                  {user2Image && !user2ImageUrl && (
+                    <span className="text-xs text-muted-foreground">
+                      Selected
+                    </span>
+                  )}
+                  {uploadingUser === 2 && (
+                    <span className="text-xs text-muted-foreground">
+                      Uploading...
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col items-center w-full">
+                  <Label
+                    htmlFor="user2Name"
+                    className="mb-2 w-full text-center"
+                  >
+                    User 2 Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id="user2Name"
+                    value={user2NameInput}
+                    onChange={(e) => setUser2NameInput(e.target.value)}
+                    required
+                    className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Desktop layout: 2x2 grid, visible md+ */}
+            <div className="hidden md:grid grid-cols-2 gap-8 mb-6">
+              {/* User 1 Avatar/Change File */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
                   {user1ImageUrl ? (
                     <img
                       src={user1ImageUrl}
@@ -210,34 +353,38 @@ const SettingsPage: React.FC = () => {
                     <span className="text-2xl text-muted-foreground">🦆</span>
                   )}
                 </div>
-                <Input
+                <input
                   type="file"
                   accept="image/*"
                   id="user1Image"
-                  className="w-32 text-xs"
+                  className="sr-only"
                   onChange={(e) => handleImageChange(e, setUser1Image, 1)}
                   disabled={uploadingUser === 1}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById("user1Image")?.click()}
+                  disabled={uploadingUser === 1}
+                  className="w-32 text-xs mt-1"
+                >
+                  {user1ImageUrl || user1Image ? "Change File" : "Choose File"}
+                </Button>
+                {user1Image && !user1ImageUrl && (
+                  <span className="text-xs text-muted-foreground">
+                    Selected
+                  </span>
+                )}
                 {uploadingUser === 1 && (
                   <span className="text-xs text-muted-foreground">
                     Uploading...
                   </span>
                 )}
               </div>
-              <div className="flex-1">
-                <Label htmlFor="user1Name">User 1 Name</Label>
-                <Input
-                  type="text"
-                  id="user1Name"
-                  value={user1NameInput}
-                  onChange={(e) => setUser1NameInput(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+              {/* User 2 Avatar/Change File */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
                   {user2ImageUrl ? (
                     <img
                       src={user2ImageUrl}
@@ -254,32 +401,75 @@ const SettingsPage: React.FC = () => {
                     <span className="text-2xl text-muted-foreground">🦆</span>
                   )}
                 </div>
-                <Input
+                <input
                   type="file"
                   accept="image/*"
                   id="user2Image"
-                  className="w-32 text-xs"
+                  className="sr-only"
                   onChange={(e) => handleImageChange(e, setUser2Image, 2)}
                   disabled={uploadingUser === 2}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById("user2Image")?.click()}
+                  disabled={uploadingUser === 2}
+                  className="w-32 text-xs mt-1"
+                >
+                  {user2ImageUrl || user2Image ? "Change File" : "Choose File"}
+                </Button>
+                {user2Image && !user2ImageUrl && (
+                  <span className="text-xs text-muted-foreground">
+                    Selected
+                  </span>
+                )}
                 {uploadingUser === 2 && (
                   <span className="text-xs text-muted-foreground">
                     Uploading...
                   </span>
                 )}
               </div>
-              <div className="flex-1">
-                <Label htmlFor="user2Name">User 2 Name</Label>
+              {/* User 1 Name/Input */}
+              <div className="flex flex-col items-center md:items-start justify-center">
+                <Label
+                  htmlFor="user1Name"
+                  className="mb-2 w-full md:w-auto text-center md:text-left"
+                >
+                  User 1 Name
+                </Label>
+                <Input
+                  type="text"
+                  id="user1Name"
+                  value={user1NameInput}
+                  onChange={(e) => setUser1NameInput(e.target.value)}
+                  required
+                  className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                />
+              </div>
+              {/* User 2 Name/Input */}
+              <div className="flex flex-col items-center md:items-start justify-center">
+                <Label
+                  htmlFor="user2Name"
+                  className="mb-2 w-full md:w-auto text-center md:text-left"
+                >
+                  User 2 Name
+                </Label>
                 <Input
                   type="text"
                   id="user2Name"
                   value={user2NameInput}
                   onChange={(e) => setUser2NameInput(e.target.value)}
                   required
+                  className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
                 />
               </div>
             </div>
-            <Button type="submit">Save User Names</Button>
+            <div className="flex justify-center">
+              <Button type="submit" className="mt-2">
+                Save User Names
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

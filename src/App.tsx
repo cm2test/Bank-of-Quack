@@ -24,6 +24,8 @@ const App: React.FC = () => {
   const [userNames, setUserNames] = useState<string[]>(["User 1", "User 2"]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
+  const [user1AvatarUrl, setUser1AvatarUrl] = useState<string | null>(null);
+  const [user2AvatarUrl, setUser2AvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(
@@ -167,20 +169,32 @@ const App: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch user names
+        // Fetch user names and avatar URLs
         let { data: appSettings, error: settingsError } = await supabase
           .from("app_settings")
           .select("key, value");
         if (settingsError) throw settingsError;
         let fetchedUser1Name = "User 1",
           fetchedUser2Name = "User 2";
+        let fetchedUser1AvatarUrl = null,
+          fetchedUser2AvatarUrl = null;
         if (appSettings) {
           const u1 = appSettings.find((s: any) => s.key === "user1_name");
           const u2 = appSettings.find((s: any) => s.key === "user2_name");
+          const u1Avatar = appSettings.find(
+            (s: any) => s.key === "user1_avatar_url"
+          );
+          const u2Avatar = appSettings.find(
+            (s: any) => s.key === "user2_avatar_url"
+          );
           if (u1) fetchedUser1Name = u1.value;
           if (u2) fetchedUser2Name = u2.value;
+          if (u1Avatar) fetchedUser1AvatarUrl = u1Avatar.value;
+          if (u2Avatar) fetchedUser2AvatarUrl = u2Avatar.value;
         }
         setUserNames([fetchedUser1Name, fetchedUser2Name]);
+        setUser1AvatarUrl(fetchedUser1AvatarUrl);
+        setUser2AvatarUrl(fetchedUser2AvatarUrl);
 
         // Fetch categories
         let { data: fetchedCategories, error: categoriesError } = await supabase
@@ -340,6 +354,8 @@ const App: React.FC = () => {
               editingTransaction,
               addTransaction,
               updateTransaction,
+              user1AvatarUrl,
+              user2AvatarUrl,
             }}
           />
         </div>
