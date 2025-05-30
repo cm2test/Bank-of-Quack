@@ -43,12 +43,14 @@ interface SectorCategoryPieChartProps {
   transactionsInDateRange: any[];
   categories: any[];
   sectors: any[];
+  showValues?: boolean;
 }
 
 const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   transactionsInDateRange,
   categories,
   sectors,
+  showValues = true,
 }) => {
   // Aggregate sector totals
   const sectorTotals = useMemo(() => {
@@ -154,7 +156,9 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
       const cx = viewBox.cx;
       const cy = viewBox.cy;
       // Prepare text values
-      const amountText = formatMoney(pieData[activeIndex].value);
+      const amountText = showValues
+        ? formatMoney(pieData[activeIndex].value)
+        : "•••••";
       const nameText = pieData[activeIndex].name;
       // Font sizes
       const amountFontSize = 22;
@@ -391,7 +395,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
                       <AccordionTrigger className="flex items-center font-bold text-base px-0">
                         <span className="text-left flex-1">{sector.name}</span>
                         <span className="text-right min-w-[120px] flex flex-col items-end">
-                          {formatMoney(sectorTotal)}
+                          {showValues ? formatMoney(sectorTotal) : "•••••"}
                           <span className="ml-2 text-xs text-muted-foreground block">
                             ({sectorPercent.toFixed(1)}%)
                           </span>
@@ -404,7 +408,9 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
                               <li key={cat.id} className="flex justify-between">
                                 <span className="text-sm">{cat.name}</span>
                                 <span className="text-sm">
-                                  {formatMoney(cat.amount)}
+                                  {showValues
+                                    ? formatMoney(cat.amount)
+                                    : "•••••"}
                                   <span className="ml-2 text-xs text-muted-foreground">
                                     ({cat.percentage.toFixed(1)}%)
                                   </span>

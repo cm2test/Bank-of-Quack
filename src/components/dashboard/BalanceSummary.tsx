@@ -7,10 +7,12 @@ import { formatMoney } from "@/lib/utils";
 
 interface BalanceSummaryProps {
   transactionsInDateRange: any[];
+  showValues?: boolean;
 }
 
 const BalanceSummary: React.FC<BalanceSummaryProps> = ({
   transactionsInDateRange,
+  showValues = true,
 }) => {
   const { userNames, user1AvatarUrl, user2AvatarUrl } = useOutletContext<any>();
 
@@ -98,7 +100,7 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
         <span className="text-lg font-semibold">owes</span>
         {renderUser(user2AvatarUrl, user2)}
         <span className="text-lg font-semibold">
-          {formatMoney(balanceSummary)}
+          {showValues ? formatMoney(balanceSummary) : "•••••"}
         </span>
       </div>
     );
@@ -109,7 +111,7 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
         <span className="text-lg font-semibold">owes</span>
         {renderUser(user1AvatarUrl, user1)}
         <span className="text-lg font-semibold">
-          {formatMoney(Math.abs(balanceSummary))}
+          {showValues ? formatMoney(Math.abs(balanceSummary)) : "•••••"}
         </span>
       </div>
     );

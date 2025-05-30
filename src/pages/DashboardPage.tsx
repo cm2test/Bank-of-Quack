@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import {
   getFirstDayOfMonth,
@@ -20,7 +22,7 @@ import {
   formatDateForInput,
 } from "../utils/dateUtils";
 import BalanceSummary from "../components/dashboard/BalanceSummary";
-import TotalExpensesWidget from "../components/dashboard/TotalExpensesWidget";
+import ExpensesIncomeNetWidget from "../components/dashboard/TotalExpensesWidget";
 import CategoryBreakdownWidget from "../components/dashboard/CategoryBreakdownWidget";
 import TransactionList from "../components/TransactionList";
 import { supabase } from "../supabaseClient";
@@ -64,6 +66,7 @@ const DashboardPage: React.FC = () => {
   const [allTransactionsState, setAllTransactionsState] =
     useState(transactions);
   const [descriptionFilter, setDescriptionFilter] = useState("");
+  const [showValues, setShowValues] = useState(true);
 
   useEffect(() => {
     setAllTransactionsState(transactions);
@@ -175,16 +178,47 @@ const DashboardPage: React.FC = () => {
   // 4. Filter by Person Involvement for the general TransactionList display (use raw, unadjusted transactions)
   const transactionsByPersonForDisplayRaw = useMemo(() => {
     if (!userNames || userNames.length < 2) return transactionsInDateRange;
+    const onlyUser1 =
+      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
+    const onlyUser2 =
+      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
+    const bothUsers =
+      personInvolvementFilter.user1 && personInvolvementFilter.user2;
+    const shared = personInvolvementFilter.shared;
     return transactionsInDateRange.filter((t) => {
       const type = t.transaction_type || "expense";
-      if (type !== "expense") return true; // non-expense transactions are always included
-      if (t.split_type === "user1_only" && personInvolvementFilter.user1)
-        return true;
-      if (t.split_type === "user2_only" && personInvolvementFilter.user2)
-        return true;
-      if (t.split_type === "splitEqually" && personInvolvementFilter.shared)
-        return true;
-      return false;
+      if (type === "expense") {
+        if (t.split_type === "user1_only" && personInvolvementFilter.user1)
+          return true;
+        if (t.split_type === "user2_only" && personInvolvementFilter.user2)
+          return true;
+        if (t.split_type === "splitEqually" && shared) return true;
+        return false;
+      }
+      if (type === "income") {
+        if (t.paid_by_user_name === "Shared") {
+          if (
+            bothUsers ||
+            (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
+          )
+            return true;
+          if (onlyUser1 || onlyUser2) return true; // show, but will be split in summary, here just show
+          return false;
+        }
+        if (onlyUser1) {
+          return t.paid_by_user_name === userNames[0];
+        } else if (onlyUser2) {
+          return t.paid_by_user_name === userNames[1];
+        } else if (
+          bothUsers ||
+          (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
+        ) {
+          return true;
+        }
+        return false;
+      }
+      // For other transaction types (reimbursement, settlement, etc), always include
+      return true;
     });
   }, [transactionsInDateRange, personInvolvementFilter, userNames]);
 
@@ -337,7 +371,24 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
-      <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
+      <div className="flex items-center mb-4">
+        <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
+        <button
+          type="button"
+          aria-label={showValues ? "Hide dollar values" : "Show dollar values"}
+          onClick={() => setShowValues((v) => !v)}
+          className={cn(
+            "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary",
+            showValues ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          {showValues ? (
+            <Eye className="w-5 h-5" />
+          ) : (
+            <EyeOff className="w-5 h-5" />
+          )}
+        </button>
+      </div>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
@@ -409,7 +460,7 @@ const DashboardPage: React.FC = () => {
             </div>
             {/* Bottom left: Show expenses for checkboxes */}
             <div className="flex flex-col w-full md:col-start-1 md:row-start-2">
-              <Label className="mb-1">Show Expenses for</Label>
+              <Label className="mb-1">Show Data for</Label>
               <div className="flex gap-4">
                 {userNames && userNames.length > 0 && (
                   <div className="flex items-center space-x-2">
@@ -477,9 +528,67 @@ const DashboardPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <BalanceSummary transactionsInDateRange={transactionsInDateRange} />
-      <TotalExpensesWidget
-        transactionsInDateRange={expensesForWidgetsFiltered}
+      <BalanceSummary
+        transactionsInDateRange={transactionsInDateRange}
+        showValues={showValues}
+      />
+      <ExpensesIncomeNetWidget
+        transactionsInDateRange={effectiveTransactions.filter((t) => {
+          // Apply the same filters as expensesForWidgetsFiltered, but allow all transaction types
+          if (categorySectorFilter === "all") {
+            return (
+              !descriptionFilter ||
+              (t.description &&
+                t.description
+                  .toLowerCase()
+                  .includes(descriptionFilter.toLowerCase()))
+            );
+          }
+          const [filterType, filterId] = categorySectorFilter.split("_");
+          const type = t.transaction_type || "expense";
+          const categoryToMatch =
+            t.category_name_for_reimbursement_logic || t.category_name;
+          if (!categoryToMatch || categoryToMatch.trim() === "") return false;
+          if (
+            descriptionFilter &&
+            (!t.description ||
+              !t.description
+                .toLowerCase()
+                .includes(descriptionFilter.toLowerCase()))
+          ) {
+            return false;
+          }
+          if (filterType === "cat") {
+            const selectedCategory = categories.find(
+              (c) => c.id === (filterId as string)
+            );
+            return (
+              selectedCategory && categoryToMatch === selectedCategory.name
+            );
+          }
+          if (filterType === "sec") {
+            const selectedSector = sectors.find(
+              (s) => s.id === (filterId as string)
+            );
+            if (!selectedSector || !selectedSector.category_ids) return false;
+            const categoryNamesInSector = selectedSector.category_ids
+              .map(
+                (catId: string) => categories.find((c) => c.id === catId)?.name
+              )
+              .filter((name: string | undefined): name is string => !!name);
+            return (
+              categoryToMatch && categoryNamesInSector.includes(categoryToMatch)
+            );
+          }
+          return true;
+        })}
+        // Pass all transactions for trend calculation
+        context={{
+          userNames,
+          personInvolvementFilter,
+          allTransactions: allTransactionsState,
+        }}
+        showValues={showValues}
       />
       <CategoryBreakdownWidget
         transactionsInDateRange={expensesForWidgetsFiltered}
@@ -489,6 +598,7 @@ const DashboardPage: React.FC = () => {
         transactionsInDateRange={expensesForWidgetsFiltered}
         categories={categories}
         sectors={sectors}
+        showValues={showValues}
       />
       <div className="mt-8 mb-4">
         <CardTitle className="text-xl">Transactions</CardTitle>
@@ -497,6 +607,7 @@ const DashboardPage: React.FC = () => {
         className="mt-0"
         transactions={finalFilteredTransactionsForDisplay}
         deleteTransaction={deleteTransaction}
+        showValues={showValues}
       />
     </div>
   );

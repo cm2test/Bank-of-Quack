@@ -12,7 +12,10 @@ export type Transaction = {
   split_type?: string;
 };
 
-export const getColumns = (userNames: string[]): ColumnDef<Transaction>[] => [
+export const getColumns = (
+  userNames: string[],
+  showValues: boolean = true
+): ColumnDef<Transaction>[] => [
   {
     accessorKey: "description",
     header: "Description",
@@ -22,7 +25,7 @@ export const getColumns = (userNames: string[]): ColumnDef<Transaction>[] => [
     header: () => <div className="text-right">Amount</div>,
     cell: ({ row }) => (
       <div className="text-right font-medium">
-        ${row.original.amount.toFixed(2)}
+        {showValues ? `$${row.original.amount.toFixed(2)}` : "•••••"}
       </div>
     ),
   },

@@ -11,12 +11,14 @@ interface TransactionListProps {
   transactions: any[];
   deleteTransaction: (id: string) => void;
   className?: string;
+  showValues?: boolean;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   deleteTransaction,
   className = "",
+  showValues = true,
 }) => {
   const {
     userNames,
@@ -97,7 +99,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
                       <div className="font-semibold">
-                        {t.description} - ${t.amount.toFixed(2)}
+                        {t.description} -{" "}
+                        {showValues ? `$${t.amount.toFixed(2)}` : "•••••"}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         ({type.charAt(0).toUpperCase() + type.slice(1)})
@@ -186,7 +189,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
       {/* DataTable for desktop */}
       <div className="hidden md:block">
         <DataTable
-          columns={getColumns(userNames)}
+          columns={getColumns(userNames, showValues)}
           data={sortedTransactions}
           onEdit={onEdit}
           onDelete={deleteTransaction}
