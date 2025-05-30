@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  overflow-x: hidden;
+  width: 100vw;
+}
+
 :root {
   --background: 0 0% 100%; /* fallback for light mode */
   --foreground: 222 47% 11%;

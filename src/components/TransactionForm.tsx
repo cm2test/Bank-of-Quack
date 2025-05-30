@@ -406,6 +406,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 min="0.01"
                 step="0.01"
                 required
+                inputMode="decimal"
+                pattern="[0-9]*"
                 className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm"
               />
             </div>
