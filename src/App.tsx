@@ -199,7 +199,7 @@ const App: React.FC = () => {
         // Fetch categories
         let { data: fetchedCategories, error: categoriesError } = await supabase
           .from("categories")
-          .select("id, name")
+          .select("id, name, image_url")
           .order("name", { ascending: true });
         if (categoriesError) throw categoriesError;
         setCategories(fetchedCategories || []);
@@ -342,6 +342,7 @@ const App: React.FC = () => {
               transactions,
               userNames,
               categories,
+              setCategories,
               sectors,
               addCategory,
               deleteCategory,

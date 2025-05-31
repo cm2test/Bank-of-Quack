@@ -362,7 +362,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
           </PieChart>
         </ChartContainer>
         {/* Text breakdown below the chart */}
-        <div className="w-full max-w-[400px] mt-6">
+        <div className="w-full mt-6 mx-auto md:max-w-3xl">
           {breakdownSectors.length === 0 ? (
             <p className="text-muted-foreground text-center">
               No data to show.
@@ -403,21 +403,47 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
                       </AccordionTrigger>
                       <AccordionContent>
                         {categoriesBreakdown.length > 0 && (
-                          <ul className="mt-1 ml-4 space-y-1">
-                            {categoriesBreakdown.map((cat) => (
-                              <li key={cat.id} className="flex justify-between">
-                                <span className="text-sm">{cat.name}</span>
-                                <span className="text-sm">
-                                  {showValues
-                                    ? formatMoney(cat.amount)
-                                    : "•••••"}
-                                  <span className="ml-2 text-xs text-muted-foreground">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 w-full px-2 py-2 place-items-center">
+                            {categoriesBreakdown.map((cat) => {
+                              const catObj = categories.find(
+                                (c) => c.id === cat.id
+                              );
+                              return (
+                                <div
+                                  key={cat.id}
+                                  className="flex flex-col items-center w-24 sm:w-28"
+                                >
+                                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border-2 border-yellow-400 shadow-sm mb-1">
+                                    {catObj?.image_url ? (
+                                      <img
+                                        src={catObj.image_url}
+                                        alt={cat.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-2xl text-muted-foreground">
+                                        🗂️
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div
+                                    className="text-xs font-semibold text-center truncate w-full"
+                                    title={cat.name}
+                                  >
+                                    {cat.name}
+                                  </div>
+                                  <div className="text-sm font-bold text-center">
+                                    {showValues
+                                      ? formatMoney(cat.amount)
+                                      : "•••••"}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground text-center">
                                     ({cat.percentage.toFixed(1)}%)
-                                  </span>
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
                       </AccordionContent>
                     </AccordionItem>

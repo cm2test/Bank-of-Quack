@@ -590,18 +590,17 @@ const DashboardPage: React.FC = () => {
         }}
         showValues={showValues}
       />
-      <CategoryBreakdownWidget
-        transactionsInDateRange={expensesForWidgetsFiltered}
-      />
-      {/* Pie chart for sector/category breakdown */}
-      <SectorCategoryPieChart
-        transactionsInDateRange={expensesForWidgetsFiltered}
-        categories={categories}
-        sectors={sectors}
-        showValues={showValues}
-      />
-      <div className="mt-8 mb-4">
-        <CardTitle className="text-xl">Transactions</CardTitle>
+      <div className="mb-8">
+        <CategoryBreakdownWidget
+          transactionsInDateRange={expensesForWidgetsFiltered}
+        />
+        {/* Pie chart for sector/category breakdown */}
+        <SectorCategoryPieChart
+          transactionsInDateRange={expensesForWidgetsFiltered}
+          categories={categories}
+          sectors={sectors}
+          showValues={showValues}
+        />
       </div>
       <TransactionList
         className="mt-0"

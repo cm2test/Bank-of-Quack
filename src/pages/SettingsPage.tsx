@@ -1,5 +1,11 @@
 // src/pages/SettingsPage.jsx
-import React, { useState, useEffect, FormEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  FormEvent,
+  useCallback,
+  useRef,
+} from "react";
 import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +42,7 @@ interface SettingsPageContext {
   deleteSector: (id: string) => void;
   addCategoryToSector: (sectorId: string, categoryId: string) => void;
   removeCategoryFromSector: (sectorId: string, categoryId: string) => void;
+  setCategories?: any;
 }
 
 const SettingsPage: React.FC = () => {
@@ -50,7 +57,8 @@ const SettingsPage: React.FC = () => {
     deleteSector,
     addCategoryToSector,
     removeCategoryFromSector,
-  } = useOutletContext<SettingsPageContext>();
+    setCategories,
+  } = useOutletContext<SettingsPageContext & { setCategories?: any }>();
 
   const [user1NameInput, setUser1NameInput] = useState<string>("");
   const [user2NameInput, setUser2NameInput] = useState<string>("");
@@ -70,6 +78,22 @@ const SettingsPage: React.FC = () => {
   const [user1ImageUrl, setUser1ImageUrl] = useState<string | null>(null);
   const [user2ImageUrl, setUser2ImageUrl] = useState<string | null>(null);
   const [uploadingUser, setUploadingUser] = useState<1 | 2 | null>(null);
+  const [uploadingCategoryId, setUploadingCategoryId] = useState<string | null>(
+    null
+  );
+  const [categoryImagePreviews, setCategoryImagePreviews] = useState<
+    Record<string, string>
+  >({});
+
+  const refetchCategories = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, name, image_url")
+      .order("name", { ascending: true });
+    if (!error && typeof setCategories === "function") {
+      setCategories(data || []);
+    }
+  }, [setCategories]);
 
   useEffect(() => {
     if (userNames && userNames.length >= 2) {
@@ -177,6 +201,61 @@ const SettingsPage: React.FC = () => {
       };
       reader.readAsDataURL(file);
       uploadAvatar(file, user);
+    }
+  };
+
+  // Helper to upload image to Supabase Storage and update category image_url
+  const uploadCategoryImage = async (file: File, categoryId: string) => {
+    setUploadingCategoryId(categoryId);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `category_${categoryId}_${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("category-images")
+      .upload(filePath, file, { upsert: true });
+    if (uploadError) {
+      alert("Failed to upload image: " + uploadError.message);
+      setUploadingCategoryId(null);
+      return;
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("category-images")
+      .getPublicUrl(filePath);
+    const publicUrl = publicUrlData?.publicUrl;
+    if (publicUrl) {
+      // Update category row
+      await supabase
+        .from("categories")
+        .update({ image_url: publicUrl })
+        .eq("id", categoryId);
+      setCategoryImagePreviews((prev) => ({
+        ...prev,
+        [categoryId]: publicUrl,
+      }));
+      // Refetch categories from Supabase to ensure fresh data
+      if (typeof refetchCategories === "function") {
+        refetchCategories();
+      }
+    }
+    setUploadingCategoryId(null);
+  };
+
+  // Handler for category image input
+  const handleCategoryImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    categoryId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCategoryImagePreviews((prev) => ({
+          ...prev,
+          [categoryId]: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+      uploadCategoryImage(file, categoryId);
     }
   };
 
@@ -498,27 +577,79 @@ const SettingsPage: React.FC = () => {
             <p className="text-muted-foreground">No categories defined.</p>
           ) : (
             <>
-              <ul className="space-y-2">
-                {categories.map((cat) => (
-                  <li
-                    key={cat.id}
-                    className="flex items-center justify-between"
-                  >
-                    <span>
-                      {cat.name}{" "}
-                      <span className="text-xs text-muted-foreground">
-                        (ID: {cat.id.substring(0, 6)})
-                      </span>
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteCategoryDialog(cat)}
+              <ul className="space-y-4">
+                {categories.map((cat) => {
+                  const fileInputRef = useRef<HTMLInputElement>(null);
+                  return (
+                    <li
+                      key={cat.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
                     >
-                      Delete
-                    </Button>
-                  </li>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+                          {categoryImagePreviews[cat.id] || cat.image_url ? (
+                            <img
+                              src={
+                                categoryImagePreviews[cat.id] || cat.image_url
+                              }
+                              alt={cat.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xl text-muted-foreground">
+                              🗂️
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-base leading-tight break-words max-w-[140px] sm:max-w-none">
+                            {cat.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (ID: {cat.id.substring(0, 6)})
+                          </span>
+                        </div>
+                      </div>
+                      {/* Hidden file input outside the flex container */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        id={`catimg_${cat.id}`}
+                        className="sr-only"
+                        onChange={(e) => handleCategoryImageChange(e, cat.id)}
+                        disabled={uploadingCategoryId === cat.id}
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingCategoryId === cat.id}
+                          className="text-xs w-full sm:w-auto"
+                        >
+                          {cat.image_url || categoryImagePreviews[cat.id]
+                            ? "Change Image"
+                            : "Add Image"}
+                        </Button>
+                        {uploadingCategoryId === cat.id && (
+                          <span className="text-xs text-muted-foreground">
+                            Uploading...
+                          </span>
+                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteCategoryDialog(cat)}
+                          className="text-xs w-full sm:w-auto"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
               <AlertDialog
                 open={!!deleteCategoryDialog}
@@ -582,25 +713,30 @@ const SettingsPage: React.FC = () => {
             <p className="text-muted-foreground">No sectors defined.</p>
           ) : (
             <>
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {sectors.map((sec) => (
                   <li
                     key={sec.id}
-                    className="flex items-center justify-between"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
                   >
-                    <span>
-                      {sec.name}{" "}
+                    <div className="flex flex-col">
+                      <span className="font-medium text-base leading-tight break-words max-w-[180px] sm:max-w-none">
+                        {sec.name}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         (ID: {sec.id.substring(0, 6)})
                       </span>
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteSectorDialog(sec)}
-                    >
-                      Delete
-                    </Button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteSectorDialog(sec)}
+                        className="text-xs w-full sm:w-auto"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

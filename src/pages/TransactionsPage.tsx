@@ -12,7 +12,7 @@ const TransactionsPage: React.FC = () => {
   const context = useOutletContext<any>();
 
   return (
-    <div className="max-w-4xl mx-auto w-full p-4">
+    <div className="max-w-4xl mx-auto w-full p-4 mt-12">
       {/* The TransactionForm will dynamically change its title and behavior 
           based on whether `editingTransaction` is set in the context */}
       <TransactionForm
