@@ -358,6 +358,15 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const filtersActive =
+    startDate !== formatDateForInput(getFirstDayOfMonth(new Date())) ||
+    endDate !== formatDateForInput(getLastDayOfMonth(new Date())) ||
+    categorySectorFilter !== "all" ||
+    descriptionFilter.trim() !== "" ||
+    !personInvolvementFilter.user1 ||
+    !personInvolvementFilter.user2 ||
+    !personInvolvementFilter.shared;
+
   return (
     <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
       <div className="flex items-center mb-4">
@@ -386,7 +395,17 @@ const DashboardPage: React.FC = () => {
             style={{ transform: "translateY(-50%)" }}
             aria-label="Open Filters"
           >
-            <FilterIcon className="w-6 h-6" />
+            <span className="relative">
+              <FilterIcon
+                className={cn(
+                  "w-6 h-6 transition-colors",
+                  filtersActive ? "text-primary" : "text-muted-foreground"
+                )}
+              />
+              {filtersActive && (
+                <span className="absolute top-0 right-0 block w-2 h-2 rounded-full bg-primary border-2 border-background" />
+              )}
+            </span>
           </Button>
         </SheetTrigger>
         <SheetContent

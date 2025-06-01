@@ -43,6 +43,18 @@ const TRANSACTION_TYPES = [
   { value: "reimbursement", label: "Reimbursement" },
 ];
 
+// Helper to get local date string in YYYY-MM-DD
+function getLocalDateString() {
+  const todayLocal = new Date();
+  return (
+    todayLocal.getFullYear() +
+    "-" +
+    String(todayLocal.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(todayLocal.getDate()).padStart(2, "0")
+  );
+}
+
 const TransactionForm: React.FC<TransactionFormProps> = ({
   onAddTransaction,
   context: propContext,
@@ -63,9 +75,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [transactionType, setTransactionType] = useState<string>(
     TRANSACTION_TYPES[0].value
   );
-  const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [date, setDate] = useState<string>(getLocalDateString());
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -170,7 +180,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       lastEditIdRef.current = null;
       setId(null);
       setTransactionType("expense");
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(getLocalDateString());
       setDescription("");
       setAmount("");
       setPaidOrReceivedBy(userNames[0]);
@@ -191,7 +201,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const resetFormAndState = () => {
     setId(null);
     setTransactionType("expense");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(getLocalDateString());
     setDescription("");
     setAmount("");
     setSelectedCategoryId("");

@@ -22,6 +22,14 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
+import TransactionList from "@/components/TransactionList";
 
 const CHART_COLORS = [
   "#26A69A", // Teal
@@ -281,166 +289,228 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     setExpandedSectors([]);
   }, [selectedSectorId, breakdownSectors.length]);
 
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
+
   return (
-    <Card className="flex flex-col">
-      <ChartStyle id="sector-category-pie" config={chartConfig} />
-      <CardHeader className="flex-row items-start space-y-0 pb-0">
-        <div className="grid gap-1">
-          <CardTitle>Sector & Category Breakdown</CardTitle>
-        </div>
-        <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
-          <SelectTrigger
-            className="ml-auto h-7 w-[160px] rounded-lg pl-2.5"
-            aria-label="Select a sector"
-          >
-            <SelectValue placeholder="Select sector" />
-          </SelectTrigger>
-          <SelectContent align="end" className="rounded-xl">
-            {sectorOptions.map((opt) => (
-              <SelectItem
-                key={opt.id}
-                value={opt.id}
-                className="rounded-lg [&_span]:flex"
-              >
-                <div className="flex items-center gap-2 text-xs">
-                  <span
-                    className="flex h-3 w-3 shrink-0 rounded-sm"
-                    style={{
-                      backgroundColor: chartConfig[opt.id]?.color || "#ccc",
-                    }}
-                  />
-                  {opt.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center pb-0">
-        <ChartContainer
-          id="sector-category-pie"
-          config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[300px]"
-        >
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={60}
-              strokeWidth={5}
-              activeIndex={activeIndex}
-              onMouseEnter={(_, idx) => setActiveIndex(idx)}
-              onTouchStart={(_, idx) => setActiveIndex(idx)}
-              activeShape={({ outerRadius = 0, ...props }) => (
-                <g>
-                  <Sector {...props} outerRadius={outerRadius + 10} />
-                  <Sector
-                    {...props}
-                    outerRadius={outerRadius + 25}
-                    innerRadius={outerRadius + 12}
-                  />
-                </g>
-              )}
+    <>
+      <Card className="flex flex-col">
+        <ChartStyle id="sector-category-pie" config={chartConfig} />
+        <CardHeader className="flex-row items-start space-y-0 pb-0">
+          <div className="grid gap-1">
+            <CardTitle>Sector & Category Breakdown</CardTitle>
+          </div>
+          <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
+            <SelectTrigger
+              className="ml-auto h-7 w-[160px] rounded-lg pl-2.5"
+              aria-label="Select a sector"
             >
-              <Label content={renderCenterLabel} />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-        {/* Text breakdown below the chart */}
-        <div className="w-full mt-6 mx-auto md:max-w-3xl">
-          {breakdownSectors.length === 0 ? (
-            <p className="text-muted-foreground text-center">
-              No data to show.
-            </p>
-          ) : (
-            <>
-              {breakdownSectors.length > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mb-2 ml-auto block"
-                  onClick={handleExpandCollapseAll}
+              <SelectValue placeholder="Select sector" />
+            </SelectTrigger>
+            <SelectContent align="end" className="rounded-xl">
+              {sectorOptions.map((opt) => (
+                <SelectItem
+                  key={opt.id}
+                  value={opt.id}
+                  className="rounded-lg [&_span]:flex"
                 >
-                  {allExpanded ? "Collapse All" : "Expand All"}
-                </Button>
-              )}
-              <Accordion
-                type="multiple"
-                value={expandedSectors}
-                onValueChange={setExpandedSectors}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span
+                      className="flex h-3 w-3 shrink-0 rounded-sm"
+                      style={{
+                        backgroundColor: chartConfig[opt.id]?.color || "#ccc",
+                      }}
+                    />
+                    {opt.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center pb-0">
+          <ChartContainer
+            id="sector-category-pie"
+            config={chartConfig}
+            className="mx-auto aspect-square w-full max-w-[300px]"
+          >
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                strokeWidth={5}
+                activeIndex={activeIndex}
+                onMouseEnter={(_, idx) => setActiveIndex(idx)}
+                onTouchStart={(_, idx) => setActiveIndex(idx)}
+                activeShape={({ outerRadius = 0, ...props }) => (
+                  <g>
+                    <Sector {...props} outerRadius={outerRadius + 10} />
+                    <Sector
+                      {...props}
+                      outerRadius={outerRadius + 25}
+                      innerRadius={outerRadius + 12}
+                    />
+                  </g>
+                )}
               >
-                {breakdownSectors.map((sector) => {
-                  const sectorTotal =
-                    sectorTotals.find((p) => p.id === sector.id)?.value || 0;
-                  const sectorPercent =
-                    total > 0 ? (sectorTotal / total) * 100 : 0;
-                  const categoriesBreakdown = getCategoryBreakdown(sector);
-                  return (
-                    <AccordionItem key={sector.id} value={sector.id}>
-                      <AccordionTrigger className="flex items-center font-bold text-base px-0">
-                        <span className="text-left flex-1">{sector.name}</span>
-                        <span className="text-right min-w-[120px] flex flex-col items-end">
-                          {showValues ? formatMoney(sectorTotal) : "•••••"}
-                          <span className="ml-2 text-xs text-muted-foreground block">
-                            ({sectorPercent.toFixed(1)}%)
+                <Label content={renderCenterLabel} />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+          {/* Text breakdown below the chart */}
+          <div className="w-full mt-6 mx-auto md:max-w-3xl">
+            {breakdownSectors.length === 0 ? (
+              <p className="text-muted-foreground text-center">
+                No data to show.
+              </p>
+            ) : (
+              <>
+                {breakdownSectors.length > 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mb-2 ml-auto block"
+                    onClick={handleExpandCollapseAll}
+                  >
+                    {allExpanded ? "Collapse All" : "Expand All"}
+                  </Button>
+                )}
+                <Accordion
+                  type="multiple"
+                  value={expandedSectors}
+                  onValueChange={setExpandedSectors}
+                >
+                  {breakdownSectors.map((sector) => {
+                    const sectorTotal =
+                      sectorTotals.find((p) => p.id === sector.id)?.value || 0;
+                    const sectorPercent =
+                      total > 0 ? (sectorTotal / total) * 100 : 0;
+                    const categoriesBreakdown = getCategoryBreakdown(sector);
+                    return (
+                      <AccordionItem key={sector.id} value={sector.id}>
+                        <AccordionTrigger className="flex items-center font-bold text-base px-0">
+                          <span className="text-left flex-1">
+                            {sector.name}
                           </span>
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        {categoriesBreakdown.length > 0 && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 w-full px-2 py-2 place-items-center">
-                            {categoriesBreakdown.map((cat) => {
-                              const catObj = categories.find(
-                                (c) => c.id === cat.id
-                              );
-                              return (
-                                <div
-                                  key={cat.id}
-                                  className="flex flex-col items-center w-24 sm:w-28"
-                                >
-                                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border-2 border-yellow-400 shadow-sm mb-1">
-                                    {catObj?.image_url ? (
-                                      <img
-                                        src={catObj.image_url}
-                                        alt={cat.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <span className="text-2xl text-muted-foreground">
-                                        🗂️
-                                      </span>
-                                    )}
-                                  </div>
+                          <span className="text-right min-w-[120px] flex flex-col items-end">
+                            {showValues ? formatMoney(sectorTotal) : "•••••"}
+                            <span className="ml-2 text-xs text-muted-foreground block">
+                              ({sectorPercent.toFixed(1)}%)
+                            </span>
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {categoriesBreakdown.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 w-full px-2 py-2 place-items-center">
+                              {categoriesBreakdown.map((cat) => {
+                                const catObj = categories.find(
+                                  (c) => c.id === cat.id
+                                );
+                                return (
                                   <div
-                                    className="text-xs font-semibold text-center truncate w-full"
-                                    title={cat.name}
+                                    key={cat.id}
+                                    className="flex flex-col items-center w-24 sm:w-28 cursor-pointer group"
+                                    onClick={() => {
+                                      setSelectedCategoryId(cat.id);
+                                      setSelectedCategoryName(cat.name);
+                                      setCategoryModalOpen(true);
+                                    }}
                                   >
-                                    {cat.name}
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border-2 border-yellow-400 shadow-sm mb-1 group-hover:scale-105 transition-transform">
+                                      {catObj?.image_url ? (
+                                        <img
+                                          src={catObj.image_url}
+                                          alt={cat.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-2xl text-muted-foreground">
+                                          🗂️
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div
+                                      className="text-xs font-semibold text-center truncate w-full"
+                                      title={cat.name}
+                                    >
+                                      {cat.name}
+                                    </div>
+                                    <div className="text-sm font-bold text-center">
+                                      {showValues
+                                        ? formatMoney(cat.amount)
+                                        : "•••••"}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground text-center">
+                                      ({cat.percentage.toFixed(1)}%)
+                                    </div>
                                   </div>
-                                  <div className="text-sm font-bold text-center">
-                                    {showValues
-                                      ? formatMoney(cat.amount)
-                                      : "•••••"}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground text-center">
-                                    ({cat.percentage.toFixed(1)}%)
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      {/* Category Transactions Modal */}
+      <Sheet open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
+        <SheetContent
+          side="right"
+          className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
+          style={{
+            background: "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
+          }}
+        >
+          <SheetHeader>
+            <div className="flex items-center gap-3 py-2">
+              {(() => {
+                const catObj = categories.find(
+                  (c) => c.id === selectedCategoryId
+                );
+                if (catObj?.image_url) {
+                  return (
+                    <img
+                      src={catObj.image_url}
+                      alt={selectedCategoryName}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400 shadow-sm bg-white"
+                    />
                   );
-                })}
-              </Accordion>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                } else {
+                  return (
+                    <span className="w-12 h-12 flex items-center justify-center rounded-full bg-muted-foreground/10 text-3xl border-2 border-yellow-400 shadow-sm">
+                      🗂️
+                    </span>
+                  );
+                }
+              })()}
+              <span className="text-xl font-bold text-white truncate">
+                {selectedCategoryName}
+              </span>
+            </div>
+          </SheetHeader>
+          <div className="mt-4">
+            <TransactionList
+              transactions={transactionsInDateRange.filter(
+                (t) => t.category_id === selectedCategoryId
+              )}
+              deleteTransaction={() => {}}
+              showValues={showValues}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 
