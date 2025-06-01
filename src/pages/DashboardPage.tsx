@@ -30,6 +30,11 @@ import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
   formatDateForInput,
+  getFirstDayOfYear,
+  getLastDayOfYear,
+  getFirstDayOfPreviousMonth,
+  getFirstDayOfNextMonth,
+  parseInputDateLocal,
 } from "../utils/dateUtils";
 import BalanceSummary from "../components/dashboard/BalanceSummary";
 import ExpensesIncomeNetWidget from "../components/dashboard/TotalExpensesWidget";
@@ -374,16 +379,47 @@ const DashboardPage: React.FC = () => {
     !personInvolvementFilter.user2 ||
     !personInvolvementFilter.shared;
 
+  // Helper to format the date range for the indicator
+  const getDateRangeLabel = () => {
+    const start = parseInputDateLocal(startDate);
+    const end = parseInputDateLocal(endDate);
+    // Check for full month
+    if (
+      start.getDate() === 1 &&
+      end.getDate() ===
+        new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate() &&
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth()
+    ) {
+      return start.toLocaleString(undefined, {
+        month: "long",
+        year: "numeric",
+      });
+    }
+    // Check for full year
+    if (
+      start.getDate() === 1 &&
+      start.getMonth() === 0 &&
+      end.getMonth() === 11 &&
+      end.getDate() === 31 &&
+      start.getFullYear() === end.getFullYear()
+    ) {
+      return start.getFullYear().toString();
+    }
+    // Otherwise, show range
+    return startDate === endDate ? startDate : `${startDate} to ${endDate}`;
+  };
+
   return (
     <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
-      <div className="flex items-center mb-4">
+      <div className="relative flex items-end mb-2">
         <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
         <button
           type="button"
           aria-label={showValues ? "Hide dollar values" : "Show dollar values"}
           onClick={() => setShowValues((v) => !v)}
           className={cn(
-            "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary",
+            "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ml-1",
             showValues ? "text-primary" : "text-muted-foreground"
           )}
         >
@@ -393,6 +429,13 @@ const DashboardPage: React.FC = () => {
             <EyeOff className="w-5 h-5" />
           )}
         </button>
+        <span
+          className="absolute right-0 text-xs text-muted-foreground bg-background/40 rounded px-2 py-0.5 border border-border font-normal mb-0.5"
+          style={{ bottom: 0 }}
+          title="Current date range"
+        >
+          {getDateRangeLabel()}
+        </span>
       </div>
       <Sheet>
         <SheetTrigger asChild>
@@ -429,26 +472,95 @@ const DashboardPage: React.FC = () => {
             </SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-6 pt-4">
-            {/* From/To dates */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="startDate">From</Label>
-              <Input
-                type="date"
-                id="startDate"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-              />
+            {/* Quick Date Range Controls */}
+            <div className="flex items-center gap-2 mb-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const prevMonth = getFirstDayOfPreviousMonth(
+                    parseInputDateLocal(startDate)
+                  );
+                  setStartDate(formatDateForInput(prevMonth));
+                  setEndDate(formatDateForInput(getLastDayOfMonth(prevMonth)));
+                }}
+                aria-label="Previous Month"
+              >
+                <span className="text-lg">←</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const now = new Date();
+                  setStartDate(formatDateForInput(getFirstDayOfMonth(now)));
+                  setEndDate(formatDateForInput(getLastDayOfMonth(now)));
+                }}
+              >
+                This Month
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const now = new Date();
+                  const lastMonth = getFirstDayOfPreviousMonth(now);
+                  setStartDate(
+                    formatDateForInput(getFirstDayOfMonth(lastMonth))
+                  );
+                  setEndDate(formatDateForInput(getLastDayOfMonth(lastMonth)));
+                }}
+              >
+                Last Month
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const now = new Date();
+                  setStartDate(formatDateForInput(getFirstDayOfYear(now)));
+                  setEndDate(formatDateForInput(getLastDayOfYear(now)));
+                }}
+              >
+                This Year
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const nextMonth = getFirstDayOfNextMonth(
+                    parseInputDateLocal(startDate)
+                  );
+                  setStartDate(formatDateForInput(nextMonth));
+                  setEndDate(formatDateForInput(getLastDayOfMonth(nextMonth)));
+                }}
+                aria-label="Next Month"
+              >
+                <span className="text-lg">→</span>
+              </Button>
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="endDate">To</Label>
-              <Input
-                type="date"
-                id="endDate"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-              />
+            {/* From/To dates */}
+            <div className="flex gap-2">
+              <div className="flex flex-col gap-2 w-1/2">
+                <Label htmlFor="startDate">From</Label>
+                <Input
+                  type="date"
+                  id="startDate"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+                />
+              </div>
+              <div className="flex flex-col gap-2 w-1/2">
+                <Label htmlFor="endDate">To</Label>
+                <Input
+                  type="date"
+                  id="endDate"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+                />
+              </div>
             </div>
             {/* Category/Sector select */}
             <div className="flex flex-col gap-2">
