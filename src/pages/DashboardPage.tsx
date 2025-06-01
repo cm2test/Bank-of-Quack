@@ -15,6 +15,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Filter as FilterIcon } from "lucide-react";
 
 import {
   getFirstDayOfMonth,
@@ -389,42 +399,55 @@ const DashboardPage: React.FC = () => {
           )}
         </button>
       </div>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:grid-rows-2 md:gap-6 mb-4">
-            {/* Top left: From/To dates */}
-            <div className="flex flex-col w-full md:flex-row md:col-start-1 md:row-start-1 md:space-x-4">
-              <div className="flex flex-col w-full md:w-auto min-w-[160px]">
-                <Label htmlFor="startDate" className="mb-1">
-                  From
-                </Label>
-                <Input
-                  type="date"
-                  id="startDate"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-9 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full md:w-[160px]"
-                />
-              </div>
-              <div className="flex flex-col w-full md:w-auto min-w-[160px] md:ml-0 md:mt-0 mt-2">
-                <Label htmlFor="endDate" className="mb-1">
-                  To
-                </Label>
-                <Input
-                  type="date"
-                  id="endDate"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-9 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full md:w-[160px]"
-                />
-              </div>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center"
+            style={{ transform: "translateY(-50%)" }}
+            aria-label="Open Filters"
+          >
+            <FilterIcon className="w-6 h-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent
+          side="right"
+          className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
+          style={{
+            background: "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
+          }}
+        >
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+            <SheetDescription>
+              Refine the dashboard data using the filters below.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-6 pt-4">
+            {/* From/To dates */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="startDate">From</Label>
+              <Input
+                type="date"
+                id="startDate"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+              />
             </div>
-            {/* Top right: Category/Sector select */}
-            <div className="flex flex-col w-full md:col-start-2 md:row-start-1">
-              <Label htmlFor="categorySectorFilter" className="mb-1">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="endDate">To</Label>
+              <Input
+                type="date"
+                id="endDate"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+              />
+            </div>
+            {/* Category/Sector select */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="categorySectorFilter">
                 Filter by Category/Sector
               </Label>
               <Select
@@ -458,9 +481,9 @@ const DashboardPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Bottom left: Show expenses for checkboxes */}
-            <div className="flex flex-col w-full md:col-start-1 md:row-start-2">
-              <Label className="mb-1">Show Data for</Label>
+            {/* Show Data for checkboxes */}
+            <div className="flex flex-col gap-2">
+              <Label>Show Data for</Label>
               <div className="flex gap-4">
                 {userNames && userNames.length > 0 && (
                   <div className="flex items-center space-x-2">
@@ -473,7 +496,7 @@ const DashboardPage: React.FC = () => {
                           user1: !!checked,
                         }))
                       }
-                      className="dashboard-filter-checkbox"
+                      className="dashboard-filter-checkbox bg-background"
                     />
                     <Label htmlFor="filterUser1">{userNames[0]}</Label>
                   </div>
@@ -489,7 +512,7 @@ const DashboardPage: React.FC = () => {
                           user2: !!checked,
                         }))
                       }
-                      className="dashboard-filter-checkbox"
+                      className="dashboard-filter-checkbox bg-background"
                     />
                     <Label htmlFor="filterUser2">{userNames[1]}</Label>
                   </div>
@@ -504,29 +527,27 @@ const DashboardPage: React.FC = () => {
                         shared: !!checked,
                       }))
                     }
-                    className="dashboard-filter-checkbox"
+                    className="dashboard-filter-checkbox bg-background"
                   />
                   <Label htmlFor="filterShared">Shared</Label>
                 </div>
               </div>
             </div>
-            {/* Bottom right: Description filter */}
-            <div className="flex flex-col w-full md:col-start-2 md:row-start-2">
-              <Label htmlFor="descriptionFilter" className="mb-1">
-                Filter by Description
-              </Label>
+            {/* Description filter */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="descriptionFilter">Filter by Description</Label>
               <Input
                 type="text"
                 id="descriptionFilter"
                 value={descriptionFilter}
                 onChange={(e) => setDescriptionFilter(e.target.value)}
                 placeholder="Search description..."
-                className="h-9 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </SheetContent>
+      </Sheet>
 
       <BalanceSummary
         transactionsInDateRange={transactionsInDateRange}

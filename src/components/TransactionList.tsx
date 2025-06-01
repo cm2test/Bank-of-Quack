@@ -125,10 +125,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <div key={t.id}>
                 <div
-                  className={`bg-background/80 hover:bg-accent/40 rounded-xl transition-colors cursor-pointer border border-border ${
+                  className={`bg-background/80 rounded-xl transition-colors cursor-pointer border border-border ${
                     isExpanded ? "ring-2 ring-primary/30" : ""
-                  } flex flex-col overflow-hidden animate-fade-in`}
+                  } flex flex-col overflow-hidden animate-fade-in user-select-none focus:outline-none`}
                   onClick={() => {
+                    window.getSelection()?.removeAllRanges();
                     if (allExpanded) return; // Don't allow individual collapse if all are expanded
                     setExpandedId(isExpanded ? null : t.id);
                   }}
