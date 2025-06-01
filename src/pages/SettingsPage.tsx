@@ -970,14 +970,35 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </form>
                   {sec.category_ids && sec.category_ids.length > 0 && (
-                    <div className="ml-8 mt-1 text-xs text-muted-foreground">
-                      Categories:{" "}
-                      {sec.category_ids
-                        .map((catId: string) => {
+                    <div className="ml-8 mt-1">
+                      <div className="text-xs text-muted-foreground mb-1">
+                        Categories:
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {sec.category_ids.map((catId: string) => {
                           const cat = categories.find((c) => c.id === catId);
-                          return cat ? cat.name : catId;
-                        })
-                        .join(", ")}
+                          return cat ? (
+                            <span
+                              key={cat.id}
+                              className="inline-flex items-center bg-muted-foreground/10 text-foreground px-2 py-0.5 rounded-md text-xs font-medium shadow-sm"
+                            >
+                              {cat.name}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="destructive"
+                                className="ml-1 h-4 w-4 p-0 text-xs"
+                                onClick={() =>
+                                  removeCategoryFromSector(sec.id, cat.id)
+                                }
+                                aria-label={`Remove ${cat.name} from sector`}
+                              >
+                                ×
+                              </Button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
                     </div>
                   )}
                 </li>
