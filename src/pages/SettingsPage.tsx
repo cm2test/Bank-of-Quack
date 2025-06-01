@@ -43,6 +43,8 @@ interface SettingsPageContext {
   addCategoryToSector: (sectorId: string, categoryId: string) => void;
   removeCategoryFromSector: (sectorId: string, categoryId: string) => void;
   setCategories?: any;
+  updateCategory?: any;
+  updateSector?: any;
 }
 
 const SettingsPage: React.FC = () => {
@@ -58,7 +60,15 @@ const SettingsPage: React.FC = () => {
     addCategoryToSector,
     removeCategoryFromSector,
     setCategories,
-  } = useOutletContext<SettingsPageContext & { setCategories?: any }>();
+    updateCategory,
+    updateSector,
+  } = useOutletContext<
+    SettingsPageContext & {
+      setCategories?: any;
+      updateCategory?: any;
+      updateSector?: any;
+    }
+  >();
 
   const [user1NameInput, setUser1NameInput] = useState<string>("");
   const [user2NameInput, setUser2NameInput] = useState<string>("");
@@ -84,6 +94,15 @@ const SettingsPage: React.FC = () => {
   const [categoryImagePreviews, setCategoryImagePreviews] = useState<
     Record<string, string>
   >({});
+
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+    null
+  );
+  const [editingCategoryName, setEditingCategoryName] = useState<string>("");
+  const [editingSectorId, setEditingSectorId] = useState<string | null>(null);
+  const [editingSectorName, setEditingSectorName] = useState<string>("");
 
   const refetchCategories = useCallback(async () => {
     const { data, error } = await supabase
@@ -578,78 +597,132 @@ const SettingsPage: React.FC = () => {
           ) : (
             <>
               <ul className="space-y-4">
-                {categories.map((cat) => {
-                  const fileInputRef = useRef<HTMLInputElement>(null);
-                  return (
-                    <li
-                      key={cat.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
-                          {categoryImagePreviews[cat.id] || cat.image_url ? (
-                            <img
-                              src={
-                                categoryImagePreviews[cat.id] || cat.image_url
-                              }
-                              alt={cat.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xl text-muted-foreground">
-                              🗂️
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-base leading-tight break-words max-w-[140px] sm:max-w-none">
-                            {cat.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            (ID: {cat.id.substring(0, 6)})
-                          </span>
-                        </div>
-                      </div>
-                      {/* Hidden file input outside the flex container */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        id={`catimg_${cat.id}`}
-                        className="sr-only"
-                        onChange={(e) => handleCategoryImageChange(e, cat.id)}
-                        disabled={uploadingCategoryId === cat.id}
-                      />
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingCategoryId === cat.id}
-                          className="text-xs w-full sm:w-auto"
-                        >
-                          {cat.image_url || categoryImagePreviews[cat.id]
-                            ? "Change Image"
-                            : "Add Image"}
-                        </Button>
-                        {uploadingCategoryId === cat.id && (
-                          <span className="text-xs text-muted-foreground">
-                            Uploading...
+                {categories.map((cat) => (
+                  <li
+                    key={cat.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+                        {categoryImagePreviews[cat.id] || cat.image_url ? (
+                          <img
+                            src={categoryImagePreviews[cat.id] || cat.image_url}
+                            alt={cat.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xl text-muted-foreground">
+                            🗂️
                           </span>
                         )}
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteCategoryDialog(cat)}
-                          className="text-xs w-full sm:w-auto"
-                        >
-                          Delete
-                        </Button>
                       </div>
-                    </li>
-                  );
-                })}
+                      <div className="flex flex-col">
+                        {editingCategoryId === cat.id ? (
+                          <form
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              if (
+                                editingCategoryName.trim() &&
+                                updateCategory
+                              ) {
+                                await updateCategory(
+                                  cat.id,
+                                  editingCategoryName.trim()
+                                );
+                                setEditingCategoryId(null);
+                              }
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Input
+                              value={editingCategoryName}
+                              onChange={(e) =>
+                                setEditingCategoryName(e.target.value)
+                              }
+                              className="h-8 text-sm px-2 py-1"
+                              autoFocus
+                            />
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="px-2 text-xs"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="px-2 text-xs"
+                              onClick={() => setEditingCategoryId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </form>
+                        ) : (
+                          <span className="font-medium text-base leading-tight break-words max-w-[140px] sm:max-w-none">
+                            {cat.name}
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="ml-1 p-1 text-xs"
+                              onClick={() => {
+                                setEditingCategoryId(cat.id);
+                                setEditingCategoryName(cat.name);
+                              }}
+                              aria-label="Edit category name"
+                            >
+                              ✏️
+                            </Button>
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          (ID: {cat.id.substring(0, 6)})
+                        </span>
+                      </div>
+                    </div>
+                    {/* Hidden file input outside the flex container */}
+                    <input
+                      ref={(el) => {
+                        fileInputRefs.current[cat.id] = el;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      id={`catimg_${cat.id}`}
+                      className="sr-only"
+                      onChange={(e) => handleCategoryImageChange(e, cat.id)}
+                      disabled={uploadingCategoryId === cat.id}
+                    />
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRefs.current[cat.id]?.click()}
+                        disabled={uploadingCategoryId === cat.id}
+                        className="text-xs w-full sm:w-auto"
+                      >
+                        {cat.image_url || categoryImagePreviews[cat.id]
+                          ? "Change Image"
+                          : "Add Image"}
+                      </Button>
+                      {uploadingCategoryId === cat.id && (
+                        <span className="text-xs text-muted-foreground">
+                          Uploading...
+                        </span>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteCategoryDialog(cat)}
+                        className="text-xs w-full sm:w-auto"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </li>
+                ))}
               </ul>
               <AlertDialog
                 open={!!deleteCategoryDialog}
@@ -720,9 +793,63 @@ const SettingsPage: React.FC = () => {
                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium text-base leading-tight break-words max-w-[180px] sm:max-w-none">
-                        {sec.name}
-                      </span>
+                      {editingSectorId === sec.id ? (
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (editingSectorName.trim() && updateSector) {
+                              await updateSector(
+                                sec.id,
+                                editingSectorName.trim()
+                              );
+                              setEditingSectorId(null);
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Input
+                            value={editingSectorName}
+                            onChange={(e) =>
+                              setEditingSectorName(e.target.value)
+                            }
+                            className="h-8 text-sm px-2 py-1"
+                            autoFocus
+                          />
+                          <Button
+                            type="submit"
+                            size="sm"
+                            className="px-2 text-xs"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="px-2 text-xs"
+                            onClick={() => setEditingSectorId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </form>
+                      ) : (
+                        <span className="font-medium text-base leading-tight break-words max-w-[180px] sm:max-w-none">
+                          {sec.name}
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="ml-1 p-1 text-xs"
+                            onClick={() => {
+                              setEditingSectorId(sec.id);
+                              setEditingSectorName(sec.name);
+                            }}
+                            aria-label="Edit sector name"
+                          >
+                            ✏️
+                          </Button>
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         (ID: {sec.id.substring(0, 6)})
                       </span>

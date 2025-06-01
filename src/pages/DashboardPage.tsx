@@ -250,11 +250,8 @@ const DashboardPage: React.FC = () => {
       // Only show expense and reimbursement transactions for category/sector filter
       if (type !== "expense" && type !== "reimbursement") return false;
 
-      const categoryToMatch =
-        t.category_name_for_reimbursement_logic || t.category_name;
-
-      // If category is null/blank, do not show
-      if (!categoryToMatch || categoryToMatch.trim() === "") return false;
+      const categoryIdToMatch = t.category_id;
+      if (!categoryIdToMatch) return false;
 
       // Description filter
       if (
@@ -268,22 +265,14 @@ const DashboardPage: React.FC = () => {
       }
 
       if (filterType === "cat") {
-        const selectedCategory = categories.find(
-          (c) => c.id === (filterId as string)
-        );
-        return selectedCategory && categoryToMatch === selectedCategory.name;
+        return filterId === categoryIdToMatch;
       }
       if (filterType === "sec") {
         const selectedSector = sectors.find(
           (s) => s.id === (filterId as string)
         );
         if (!selectedSector || !selectedSector.category_ids) return false;
-        const categoryNamesInSector = selectedSector.category_ids
-          .map((catId: string) => categories.find((c) => c.id === catId)?.name)
-          .filter((name: string | undefined): name is string => !!name);
-        return (
-          categoryToMatch && categoryNamesInSector.includes(categoryToMatch)
-        );
+        return selectedSector.category_ids.includes(categoryIdToMatch);
       }
       return true;
     });
@@ -310,11 +299,9 @@ const DashboardPage: React.FC = () => {
     const [filterType, filterId] = categorySectorFilter.split("_");
     return expensesForWidgets.filter((t) => {
       const type = t.transaction_type || "expense";
-      // Only show expense and reimbursement transactions for category/sector filter
       if (type !== "expense" && type !== "reimbursement") return false;
-      const categoryToMatch =
-        t.category_name_for_reimbursement_logic || t.category_name;
-      if (!categoryToMatch || categoryToMatch.trim() === "") return false;
+      const categoryIdToMatch = t.category_id;
+      if (!categoryIdToMatch) return false;
       // Description filter
       if (
         descriptionFilter &&
@@ -326,22 +313,14 @@ const DashboardPage: React.FC = () => {
         return false;
       }
       if (filterType === "cat") {
-        const selectedCategory = categories.find(
-          (c) => c.id === (filterId as string)
-        );
-        return selectedCategory && categoryToMatch === selectedCategory.name;
+        return filterId === categoryIdToMatch;
       }
       if (filterType === "sec") {
         const selectedSector = sectors.find(
           (s) => s.id === (filterId as string)
         );
         if (!selectedSector || !selectedSector.category_ids) return false;
-        const categoryNamesInSector = selectedSector.category_ids
-          .map((catId: string) => categories.find((c) => c.id === catId)?.name)
-          .filter((name: string | undefined): name is string => !!name);
-        return (
-          categoryToMatch && categoryNamesInSector.includes(categoryToMatch)
-        );
+        return selectedSector.category_ids.includes(categoryIdToMatch);
       }
       return true;
     });
@@ -567,9 +546,8 @@ const DashboardPage: React.FC = () => {
           }
           const [filterType, filterId] = categorySectorFilter.split("_");
           const type = t.transaction_type || "expense";
-          const categoryToMatch =
-            t.category_name_for_reimbursement_logic || t.category_name;
-          if (!categoryToMatch || categoryToMatch.trim() === "") return false;
+          const categoryIdToMatch = t.category_id;
+          if (!categoryIdToMatch) return false;
           if (
             descriptionFilter &&
             (!t.description ||
@@ -580,26 +558,14 @@ const DashboardPage: React.FC = () => {
             return false;
           }
           if (filterType === "cat") {
-            const selectedCategory = categories.find(
-              (c) => c.id === (filterId as string)
-            );
-            return (
-              selectedCategory && categoryToMatch === selectedCategory.name
-            );
+            return filterId === categoryIdToMatch;
           }
           if (filterType === "sec") {
             const selectedSector = sectors.find(
               (s) => s.id === (filterId as string)
             );
             if (!selectedSector || !selectedSector.category_ids) return false;
-            const categoryNamesInSector = selectedSector.category_ids
-              .map(
-                (catId: string) => categories.find((c) => c.id === catId)?.name
-              )
-              .filter((name: string | undefined): name is string => !!name);
-            return (
-              categoryToMatch && categoryNamesInSector.includes(categoryToMatch)
-            );
+            return selectedSector.category_ids.includes(categoryIdToMatch);
           }
           return true;
         })}

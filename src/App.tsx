@@ -164,6 +164,36 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const updateCategory = useCallback(async (id: string, name: string) => {
+    if (!id || !name) return;
+    const { data, error } = await supabase
+      .from("categories")
+      .update({ name })
+      .eq("id", id)
+      .select();
+    if (error) return alert(error.message);
+    if (data && data.length > 0) {
+      setCategories((prev) =>
+        prev.map((cat) => (cat.id === id ? { ...cat, ...data[0] } : cat))
+      );
+    }
+  }, []);
+
+  const updateSector = useCallback(async (id: string, name: string) => {
+    if (!id || !name) return;
+    const { data, error } = await supabase
+      .from("sectors")
+      .update({ name })
+      .eq("id", id)
+      .select();
+    if (error) return alert(error.message);
+    if (data && data.length > 0) {
+      setSectors((prev) =>
+        prev.map((sec) => (sec.id === id ? { ...sec, ...data[0] } : sec))
+      );
+    }
+  }, []);
+
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
       setLoading(true);
@@ -357,6 +387,8 @@ const App: React.FC = () => {
               updateTransaction,
               user1AvatarUrl,
               user2AvatarUrl,
+              updateCategory,
+              updateSector,
             }}
           />
         </div>

@@ -13,6 +13,7 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
 }) => {
   const context = useOutletContext<any>();
   const userNames = context?.userNames || [];
+  const categories = context?.categories || [];
   const personInvolvementFilter = context?.personInvolvementFilter || {
     user1: true,
     user2: true,
@@ -20,17 +21,14 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
 
   const categoryBreakdown = useMemo(() => {
     if (!transactionsInDateRange || userNames.length < 2) {
-      // If not enough users, just sum all expenses by category
+      // If not enough users, just sum all expenses by category_id
       const netCategoryAmounts: Record<string, number> = transactionsInDateRange
         ? transactionsInDateRange
             .filter((t) => t.transaction_type === "expense")
             .reduce((acc, t) => {
-              const category =
-                (t as any).category_name_for_reimbursement_logic ||
-                t.category_name ||
-                "Uncategorized";
+              const categoryId = t.category_id || "uncategorized";
               const amount = t.amount || 0;
-              acc[category] = (acc[category] || 0) + amount;
+              acc[categoryId] = (acc[categoryId] || 0) + amount;
               return acc;
             }, {} as Record<string, number>)
         : {};
@@ -39,8 +37,10 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
         0
       );
       return Object.entries(netCategoryAmounts)
-        .map(([category, amount]) => ({
-          category,
+        .map(([categoryId, amount]) => ({
+          category:
+            categories.find((c: any) => c.id === categoryId)?.name ||
+            "Uncategorized",
           amount,
           percentage:
             totalNetDisplayExpenses > 0
@@ -60,13 +60,9 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
       .filter((t) => t.transaction_type === "expense")
       .reduce((acc, t) => {
         const splitType = t.split_type;
-        const category =
-          (t as any).category_name_for_reimbursement_logic ||
-          t.category_name ||
-          "Uncategorized";
+        const categoryId = t.category_id || "uncategorized";
         let amount = t.amount || 0;
         if (t.paid_by_user_name === "Shared") {
-          // Only include in bothOrNeither (combined) view
           if (!bothOrNeither) {
             amount = 0;
           }
@@ -89,7 +85,7 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
         } else if (bothOrNeither) {
           // amount stays as is
         }
-        acc[category] = (acc[category] || 0) + amount;
+        acc[categoryId] = (acc[categoryId] || 0) + amount;
         return acc;
       }, {} as Record<string, number>);
     const totalNetDisplayExpenses = Object.values(netCategoryAmounts).reduce(
@@ -97,8 +93,10 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
       0
     );
     return Object.entries(netCategoryAmounts)
-      .map(([category, amount]) => ({
-        category,
+      .map(([categoryId, amount]) => ({
+        category:
+          categories.find((c: any) => c.id === categoryId)?.name ||
+          "Uncategorized",
         amount,
         percentage:
           totalNetDisplayExpenses > 0
@@ -106,7 +104,7 @@ const CategoryBreakdownWidget: React.FC<CategoryBreakdownWidgetProps> = ({
             : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [transactionsInDateRange, userNames, personInvolvementFilter]);
+  }, [transactionsInDateRange, userNames, personInvolvementFilter, categories]);
 
   // Hide this widget
   return null;

@@ -7,6 +7,7 @@ export type Transaction = {
   amount: number;
   date: string;
   transaction_type: string;
+  category_id?: string;
   category_name?: string;
   paid_by_user_name?: string;
   split_type?: string;
@@ -14,6 +15,7 @@ export type Transaction = {
 
 export const getColumns = (
   userNames: string[],
+  categories: { id: string; name: string }[],
   showValues: boolean = true
 ): ColumnDef<Transaction>[] => [
   {
@@ -41,8 +43,13 @@ export const getColumns = (
       row.original.transaction_type.slice(1),
   },
   {
-    accessorKey: "category_name",
+    accessorKey: "category_id",
     header: "Category",
+    cell: ({ row }) => {
+      const catId = row.original.category_id;
+      const cat = categories.find((c) => c.id === catId);
+      return cat ? cat.name : "Uncategorized";
+    },
   },
   {
     accessorKey: "paid_by_user_name",

@@ -58,11 +58,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     transactionsInDateRange
       .filter((t) => t.transaction_type === "expense")
       .forEach((t) => {
-        const cat = categories.find(
-          (c) =>
-            c.name ===
-            (t.category_name_for_reimbursement_logic || t.category_name)
-        );
+        const cat = categories.find((c) => c.id === t.category_id);
         if (!cat) return;
         const sector = sectors.find((s) => s.category_ids.includes(cat.id));
         if (!sector) return;
@@ -86,14 +82,9 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     transactionsInDateRange
       .filter((t) => t.transaction_type === "expense")
       .forEach((t) => {
-        const cat = categories.find(
-          (c) =>
-            c.name ===
-            (t.category_name_for_reimbursement_logic || t.category_name)
-        );
-        if (!cat) return;
-        if (!sector.category_ids.includes(cat.id)) return;
-        map[cat.id] = (map[cat.id] || 0) + (t.amount || 0);
+        if (!t.category_id) return;
+        if (!sector.category_ids.includes(t.category_id)) return;
+        map[t.category_id] = (map[t.category_id] || 0) + (t.amount || 0);
       });
     return sector.category_ids
       .map((catId: string, i: number) => {
@@ -236,14 +227,9 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     transactionsInDateRange
       .filter((t) => t.transaction_type === "expense")
       .forEach((t) => {
-        const cat = categories.find(
-          (c) =>
-            c.name ===
-            (t.category_name_for_reimbursement_logic || t.category_name)
-        );
-        if (!cat) return;
-        if (!sector.category_ids.includes(cat.id)) return;
-        map[cat.id] = (map[cat.id] || 0) + (t.amount || 0);
+        if (!t.category_id) return;
+        if (!sector.category_ids.includes(t.category_id)) return;
+        map[t.category_id] = (map[t.category_id] || 0) + (t.amount || 0);
       });
     // Use correct sector total for percentage
     let totalSector = 0;

@@ -140,15 +140,15 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     <div className="flex-shrink-0">
                       {(() => {
                         let catImg = null;
-                        if (t.category_name) {
+                        if (t.category_id) {
                           const cat = categories.find(
-                            (c: any) => c.name === t.category_name
+                            (c: any) => c.id === t.category_id
                           );
                           if (cat && cat.image_url) {
                             catImg = (
                               <img
                                 src={cat.image_url}
-                                alt={t.category_name}
+                                alt={cat.name}
                                 className="w-10 h-10 rounded-xl object-cover bg-white border border-border"
                               />
                             );
@@ -193,7 +193,18 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         <div>
                           Type: {type.charAt(0).toUpperCase() + type.slice(1)}
                         </div>
-                        <div>Category: {t.category_name || "N/A"}</div>
+                        <div>
+                          Category:{" "}
+                          {(() => {
+                            if (t.category_id) {
+                              const cat = categories.find(
+                                (c: any) => c.id === t.category_id
+                              );
+                              return cat ? cat.name : "Uncategorized";
+                            }
+                            return "Uncategorized";
+                          })()}
+                        </div>
                         {type === "expense" && (
                           <>
                             <div>Paid by: {t.paid_by_user_name || "N/A"}</div>

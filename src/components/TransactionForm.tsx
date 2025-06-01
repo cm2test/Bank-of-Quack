@@ -139,18 +139,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           setSelectedCategoryId("");
           setSplitType("");
         } else if (currentType === "expense") {
-          // Prefer category_id if present, else match by name
           let categoryToEdit = null;
           if (editingTransaction.category_id) {
             categoryToEdit = categories.find(
               (c: any) => c.id === editingTransaction.category_id
-            );
-          }
-          if (!categoryToEdit) {
-            categoryToEdit = categories.find(
-              (c: any) =>
-                c.name.trim().toLowerCase() ===
-                (editingTransaction.category_name || "").trim().toLowerCase()
             );
           }
           setSelectedCategoryId(
@@ -238,7 +230,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       description,
       amount: parseFloat(amount),
       paid_by_user_name: paidOrReceivedBy,
-      category_name: null,
+      category_id: null,
       split_type: null,
       paid_to_user_name: null,
       reimburses_transaction_id:
@@ -260,10 +252,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       const categoryObject = categories.find(
         (c: any) => c.id === selectedCategoryId
       );
-      transactionDataPayload.category_name = categoryObject
-        ? categoryObject.name
-        : null;
-      if (!transactionDataPayload.category_name && selectedCategoryId) {
+      transactionDataPayload.category_id = selectedCategoryId;
+      if (!categoryObject && selectedCategoryId) {
         alert("Invalid category selected.");
         return;
       }
@@ -282,19 +272,19 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         return;
       }
       transactionDataPayload.paid_to_user_name = paidToUserName;
-      transactionDataPayload.category_name = "Settlement";
+      transactionDataPayload.category_id = null;
     } else if (transactionType === "income") {
-      transactionDataPayload.category_name = null;
+      transactionDataPayload.category_id = null;
     } else if (transactionType === "reimbursement") {
-      // If reimbursing a specific transaction, copy its category
+      // If reimbursing a specific transaction, copy its category_id
       if (selectedReimbursesTransactionId !== "none") {
         const reimbursedExpense = transactions.find(
           (t: any) => t.id === selectedReimbursesTransactionId
         );
-        transactionDataPayload.category_name =
-          reimbursedExpense?.category_name || null;
+        transactionDataPayload.category_id =
+          reimbursedExpense?.category_id || null;
       } else {
-        transactionDataPayload.category_name = null;
+        transactionDataPayload.category_id = null;
       }
     }
 
