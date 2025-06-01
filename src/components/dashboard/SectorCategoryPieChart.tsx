@@ -246,6 +246,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     } else {
       totalSector = Object.values(map).reduce((sum, v) => sum + v, 0);
     }
+    // Build and sort categories by amount descending
     return sector.category_ids
       .map((catId: string) => {
         const cat = categories.find((c) => c.id === catId);
@@ -259,7 +260,10 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
             }
           : null;
       })
-      .filter(Boolean) as {
+      .filter(Boolean)
+      .sort(
+        (a: { amount: number }, b: { amount: number }) => b.amount - a.amount
+      ) as {
       id: string;
       name: string;
       amount: number;
@@ -499,7 +503,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
               </span>
             </div>
           </SheetHeader>
-          <div className="mt-4">
+          <div className="mt-4 max-h-[80vh] overflow-y-auto pr-2">
             <TransactionList
               transactions={transactionsInDateRange.filter(
                 (t) => t.category_id === selectedCategoryId
