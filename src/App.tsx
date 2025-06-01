@@ -32,6 +32,10 @@ const App: React.FC = () => {
     null
   );
   const [bgHeight, setBgHeight] = useState<number | null>(null);
+  const [
+    sectorCategoryEmptyStateImageUrl,
+    setSectorCategoryEmptyStateImageUrl,
+  ] = useState<string | null>(null);
   const handleSetEditingTransaction = (t: any) => setEditingTransaction(t);
 
   const addCategory = useCallback(async (name: string) => {
@@ -217,10 +221,15 @@ const App: React.FC = () => {
           const u2Avatar = appSettings.find(
             (s: any) => s.key === "user2_avatar_url"
           );
+          const emptyStateImg = appSettings.find(
+            (s: any) => s.key === "sector_category_empty_state_image_url"
+          );
           if (u1) fetchedUser1Name = u1.value;
           if (u2) fetchedUser2Name = u2.value;
           if (u1Avatar) fetchedUser1AvatarUrl = u1Avatar.value;
           if (u2Avatar) fetchedUser2AvatarUrl = u2Avatar.value;
+          if (emptyStateImg)
+            setSectorCategoryEmptyStateImageUrl(emptyStateImg.value);
         }
         setUserNames([fetchedUser1Name, fetchedUser2Name]);
         setUser1AvatarUrl(fetchedUser1AvatarUrl);
@@ -389,6 +398,7 @@ const App: React.FC = () => {
               user2AvatarUrl,
               updateCategory,
               updateSector,
+              sectorCategoryEmptyStateImageUrl,
             }}
           />
         </div>

@@ -30,6 +30,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import TransactionList from "@/components/TransactionList";
+import { useOutletContext } from "react-router-dom";
 
 const CHART_COLORS = [
   "#26A69A", // Teal
@@ -52,6 +53,7 @@ interface SectorCategoryPieChartProps {
   categories: any[];
   sectors: any[];
   showValues?: boolean;
+  emptyStateImageUrl?: string;
 }
 
 const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
@@ -59,6 +61,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   categories,
   sectors,
   showValues = true,
+  emptyStateImageUrl,
 }) => {
   // Aggregate sector totals
   const sectorTotals = useMemo(() => {
@@ -299,6 +302,10 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   );
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
 
+  const context = useOutletContext<any>();
+  const imageUrl =
+    emptyStateImageUrl ?? context?.sectorCategoryEmptyStateImageUrl;
+
   return (
     <>
       <Card className="flex flex-col">
@@ -335,45 +342,66 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
             </SelectContent>
           </Select>
         </CardHeader>
-        <CardContent className="flex flex-col items-center pb-0">
-          <ChartContainer
-            id="sector-category-pie"
-            config={chartConfig}
-            className="mx-auto aspect-square w-full max-w-[300px]"
-          >
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                strokeWidth={5}
-                activeIndex={activeIndex}
-                onMouseEnter={(_, idx) => setActiveIndex(idx)}
-                onTouchStart={(_, idx) => setActiveIndex(idx)}
-                activeShape={({ outerRadius = 0, ...props }) => (
-                  <g>
-                    <Sector {...props} outerRadius={outerRadius + 10} />
-                    <Sector
-                      {...props}
-                      outerRadius={outerRadius + 25}
-                      innerRadius={outerRadius + 12}
-                    />
-                  </g>
-                )}
-              >
-                <Label content={renderCenterLabel} />
-              </Pie>
-            </PieChart>
-          </ChartContainer>
-          {/* Text breakdown below the chart */}
-          <div className="w-full mt-6 mx-auto md:max-w-3xl">
-            {breakdownSectors.length === 0 ? (
+        <CardContent
+          className={
+            breakdownSectors.length === 0
+              ? "flex flex-col items-center justify-center min-h-[300px] py-12"
+              : "flex flex-col items-center pb-0"
+          }
+        >
+          {breakdownSectors.length === 0 ? (
+            imageUrl ? (
+              <div className="flex flex-col items-center">
+                <div className="w-48 h-48 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
+                  <img
+                    src={imageUrl}
+                    alt="No data"
+                    className="object-contain w-full h-full"
+                  />
+                </div>
+                <p className="text-muted-foreground text-center mt-4">
+                  No data to show.
+                </p>
+              </div>
+            ) : (
               <p className="text-muted-foreground text-center">
                 No data to show.
               </p>
-            ) : (
-              <>
+            )
+          ) : (
+            <>
+              <ChartContainer
+                id="sector-category-pie"
+                config={chartConfig}
+                className="mx-auto aspect-square w-full max-w-[300px]"
+              >
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                    activeIndex={activeIndex}
+                    onMouseEnter={(_, idx) => setActiveIndex(idx)}
+                    onTouchStart={(_, idx) => setActiveIndex(idx)}
+                    activeShape={({ outerRadius = 0, ...props }) => (
+                      <g>
+                        <Sector {...props} outerRadius={outerRadius + 10} />
+                        <Sector
+                          {...props}
+                          outerRadius={outerRadius + 25}
+                          innerRadius={outerRadius + 12}
+                        />
+                      </g>
+                    )}
+                  >
+                    <Label content={renderCenterLabel} />
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+              {/* Text breakdown below the chart */}
+              <div className="w-full mt-6 mx-auto md:max-w-3xl">
                 {breakdownSectors.length > 1 && (
                   <Button
                     variant="outline"
@@ -462,9 +490,9 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
                     );
                   })}
                 </Accordion>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
       {/* Category Transactions Modal */}

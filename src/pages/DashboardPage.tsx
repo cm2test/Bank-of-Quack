@@ -53,8 +53,15 @@ interface DashboardPageContext {
 type TransactionWithExtras = any;
 
 const DashboardPage: React.FC = () => {
-  const { transactions, userNames, categories, sectors } =
-    useOutletContext<DashboardPageContext>();
+  const {
+    transactions,
+    userNames,
+    categories,
+    sectors,
+    sectorCategoryEmptyStateImageUrl,
+  } = useOutletContext<
+    DashboardPageContext & { sectorCategoryEmptyStateImageUrl?: string }
+  >();
 
   const [startDate, setStartDate] = useState<string>(
     formatDateForInput(getFirstDayOfMonth(new Date()))
@@ -606,6 +613,7 @@ const DashboardPage: React.FC = () => {
           categories={categories}
           sectors={sectors}
           showValues={showValues}
+          emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
         />
       </div>
       <TransactionList

@@ -13,6 +13,7 @@ import {
   CartesianGrid,
   LabelList,
 } from "recharts";
+import { useOutletContext } from "react-router-dom";
 
 interface SectorCategoryBarChartProps {
   transactionsInDateRange: any[];
@@ -34,6 +35,8 @@ const SectorCategoryBarChart: React.FC<SectorCategoryBarChartProps> = ({
   categories,
   sectors,
 }) => {
+  const { sectorCategoryEmptyStateImageUrl } = useOutletContext<any>();
+
   // Build a map of categoryId -> categoryName
   const categoryIdToName = useMemo(
     () =>
@@ -127,7 +130,24 @@ const SectorCategoryBarChart: React.FC<SectorCategoryBarChartProps> = ({
       </CardHeader>
       <CardContent>
         {filteredData.length === 0 ? (
-          <p className="text-muted-foreground">No expenses to show.</p>
+          sectorCategoryEmptyStateImageUrl ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-full flex justify-center">
+                <div className="w-48 h-48 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
+                  <img
+                    src={sectorCategoryEmptyStateImageUrl}
+                    alt="No data"
+                    className="object-contain w-full h-full"
+                  />
+                </div>
+              </div>
+              <p className="text-muted-foreground text-center mt-4">
+                No expenses to show.
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No expenses to show.</p>
+          )
         ) : (
           <div className="w-full overflow-x-auto sm:overflow-x-visible">
             <ChartContainer config={{}} className={`min-w-[480px] w-full`}>
