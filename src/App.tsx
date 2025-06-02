@@ -347,7 +347,7 @@ const App: React.FC = () => {
       </nav>
       {/* Hero section with BankerQuack image */}
       <div
-        className="w-full flex items-center justify-center bg-[#004D40]"
+        className="w-full flex items-center justify-center bg-[#004D40] relative"
         style={{
           width: "100vw",
           overflow: "hidden",
@@ -364,6 +364,21 @@ const App: React.FC = () => {
             objectFit: "contain",
           }}
         />
+        {/* Animated Cursive Text Overlay */}
+        <span
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl sm:text-5xl font-bold pointer-events-none select-none animate-typewriter whitespace-nowrap"
+          style={{
+            color: "#FFD700",
+            fontWeight: 700,
+            fontFamily: "'Great Vibes', cursive",
+            WebkitTextStroke: "0.5px black",
+            WebkitTextFillColor: "#FFD700",
+            textShadow: "0 2px 8px #000, 0 0px 2px #000",
+            zIndex: 10,
+          }}
+        >
+          <TypewriterText text="Bank of Quack" speed={120} pause={1000} />
+        </span>
       </div>
       {/* Main content below the hero image */}
       <main
@@ -448,6 +463,35 @@ function MobileMenu({
         )}
     </>
   );
+}
+
+function TypewriterText({
+  text,
+  speed = 120,
+  pause = 1000,
+}: {
+  text: string;
+  speed?: number;
+  pause?: number;
+}) {
+  const [displayed, setDisplayed] = React.useState("");
+  const [index, setIndex] = React.useState(0);
+  React.useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (index < text.length) {
+      timeout = setTimeout(() => {
+        setDisplayed((prev) => prev + text[index]);
+        setIndex((i) => i + 1);
+      }, speed);
+    } else {
+      timeout = setTimeout(() => {
+        setDisplayed("");
+        setIndex(0);
+      }, pause);
+    }
+    return () => clearTimeout(timeout);
+  }, [index, text, speed, pause]);
+  return <>{displayed}</>;
 }
 
 export default App;
