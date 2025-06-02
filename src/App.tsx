@@ -319,7 +319,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav
-        className="flex items-center justify-between py-6 border-b z-10 relative px-8"
+        className="hidden md:flex items-center justify-between py-6 border-b z-10 relative px-8"
         style={{
           background: "#004D40",
         }}
