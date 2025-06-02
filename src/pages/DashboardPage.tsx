@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Filter as FilterIcon } from "lucide-react";
+import BottomNavBar from "@/components/dashboard/BottomNavBar";
+import FloatingActionNav from "@/components/dashboard/FloatingActionNav";
+import DuckFabNav from "@/components/dashboard/DuckFabNav";
 
 import {
   getFirstDayOfMonth,
@@ -411,330 +414,342 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
-      <div className="relative flex items-end mb-2">
-        <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
-        <button
-          type="button"
-          aria-label={showValues ? "Hide dollar values" : "Show dollar values"}
-          onClick={() => setShowValues((v) => !v)}
-          className={cn(
-            "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ml-1",
-            showValues ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          {showValues ? (
-            <Eye className="w-5 h-5" />
-          ) : (
-            <EyeOff className="w-5 h-5" />
-          )}
-        </button>
-        <span
-          className="absolute right-0 text-xs text-muted-foreground bg-background/40 rounded px-2 py-0.5 border border-border font-normal mb-0.5"
-          style={{ bottom: 0 }}
-          title="Current date range"
-        >
-          {getDateRangeLabel()}
-        </span>
-      </div>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center"
-            style={{ transform: "translateY(-50%)" }}
-            aria-label="Open Filters"
+    <>
+      <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
+        <div className="relative flex items-end mb-2">
+          <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
+          <button
+            type="button"
+            aria-label={
+              showValues ? "Hide dollar values" : "Show dollar values"
+            }
+            onClick={() => setShowValues((v) => !v)}
+            className={cn(
+              "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ml-1",
+              showValues ? "text-primary" : "text-muted-foreground"
+            )}
           >
-            <span className="relative">
-              <FilterIcon
-                className={cn(
-                  "w-6 h-6 transition-colors",
-                  filtersActive ? "text-primary" : "text-muted-foreground"
+            {showValues ? (
+              <Eye className="w-5 h-5" />
+            ) : (
+              <EyeOff className="w-5 h-5" />
+            )}
+          </button>
+          <span
+            className="absolute right-0 text-xs text-muted-foreground bg-background/40 rounded px-2 py-0.5 border border-border font-normal mb-0.5"
+            style={{ bottom: 0 }}
+            title="Current date range"
+          >
+            {getDateRangeLabel()}
+          </span>
+        </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center"
+              style={{ transform: "translateY(-50%)" }}
+              aria-label="Open Filters"
+            >
+              <span className="relative">
+                <FilterIcon
+                  className={cn(
+                    "w-6 h-6 transition-colors",
+                    filtersActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                />
+                {filtersActive && (
+                  <span className="absolute top-0 right-0 block w-2 h-2 rounded-full bg-primary border-2 border-background" />
                 )}
-              />
-              {filtersActive && (
-                <span className="absolute top-0 right-0 block w-2 h-2 rounded-full bg-primary border-2 border-background" />
-              )}
-            </span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
-          style={{
-            background: "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
-          }}
-        >
-          <SheetHeader>
-            <SheetTitle>Filters</SheetTitle>
-            <SheetDescription>
-              Refine the dashboard data using the filters below.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex flex-col gap-6 pt-4">
-            {/* Quick Date Range Controls */}
-            <div className="flex items-center gap-2 mb-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  const prevMonth = getFirstDayOfPreviousMonth(
-                    parseInputDateLocal(startDate)
-                  );
-                  setStartDate(formatDateForInput(prevMonth));
-                  setEndDate(formatDateForInput(getLastDayOfMonth(prevMonth)));
-                }}
-                aria-label="Previous Month"
-              >
-                <span className="text-lg">←</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const now = new Date();
-                  setStartDate(formatDateForInput(getFirstDayOfMonth(now)));
-                  setEndDate(formatDateForInput(getLastDayOfMonth(now)));
-                }}
-              >
-                This Month
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const now = new Date();
-                  const lastMonth = getFirstDayOfPreviousMonth(now);
-                  setStartDate(
-                    formatDateForInput(getFirstDayOfMonth(lastMonth))
-                  );
-                  setEndDate(formatDateForInput(getLastDayOfMonth(lastMonth)));
-                }}
-              >
-                Last Month
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const now = new Date();
-                  setStartDate(formatDateForInput(getFirstDayOfYear(now)));
-                  setEndDate(formatDateForInput(getLastDayOfYear(now)));
-                }}
-              >
-                This Year
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  const nextMonth = getFirstDayOfNextMonth(
-                    parseInputDateLocal(startDate)
-                  );
-                  setStartDate(formatDateForInput(nextMonth));
-                  setEndDate(formatDateForInput(getLastDayOfMonth(nextMonth)));
-                }}
-                aria-label="Next Month"
-              >
-                <span className="text-lg">→</span>
-              </Button>
-            </div>
-            {/* From/To dates */}
-            <div className="flex gap-2">
-              <div className="flex flex-col gap-2 w-1/2">
-                <Label htmlFor="startDate">From</Label>
-                <Input
-                  type="date"
-                  id="startDate"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-                />
-              </div>
-              <div className="flex flex-col gap-2 w-1/2">
-                <Label htmlFor="endDate">To</Label>
-                <Input
-                  type="date"
-                  id="endDate"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-                />
-              </div>
-            </div>
-            {/* Category/Sector select */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="categorySectorFilter">
-                Filter by Category/Sector
-              </Label>
-              <Select
-                value={categorySectorFilter}
-                onValueChange={setCategorySectorFilter}
-              >
-                <SelectTrigger
-                  id="categorySectorFilter"
-                  className="w-full bg-background"
+              </span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
+            style={{
+              background:
+                "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
+            }}
+          >
+            <SheetHeader>
+              <SheetTitle>Filters</SheetTitle>
+              <SheetDescription>
+                Refine the dashboard data using the filters below.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="flex flex-col gap-6 pt-4">
+              {/* Quick Date Range Controls */}
+              <div className="flex items-center gap-2 mb-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    const prevMonth = getFirstDayOfPreviousMonth(
+                      parseInputDateLocal(startDate)
+                    );
+                    setStartDate(formatDateForInput(prevMonth));
+                    setEndDate(
+                      formatDateForInput(getLastDayOfMonth(prevMonth))
+                    );
+                  }}
+                  aria-label="Previous Month"
                 >
-                  <SelectValue placeholder="All Categories/Sectors" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                  <SelectItem value="all">All Categories/Sectors</SelectItem>
-                  <SelectItem value="label_categories" disabled>
-                    Categories
-                  </SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={`cat_${cat.id}`} value={`cat_${cat.id}`}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="label_sectors" disabled>
-                    Sectors
-                  </SelectItem>
-                  {sectors.map((sec) => (
-                    <SelectItem key={`sec_${sec.id}`} value={`sec_${sec.id}`}>
-                      {sec.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Show Data for checkboxes */}
-            <div className="flex flex-col gap-2">
-              <Label>Show Data for</Label>
-              <div className="flex gap-4">
-                {userNames && userNames.length > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="filterUser1"
-                      checked={personInvolvementFilter.user1}
-                      onCheckedChange={(checked) =>
-                        setPersonInvolvementFilter((prev) => ({
-                          ...prev,
-                          user1: !!checked,
-                        }))
-                      }
-                      className="dashboard-filter-checkbox bg-background"
-                    />
-                    <Label htmlFor="filterUser1">{userNames[0]}</Label>
-                  </div>
-                )}
-                {userNames && userNames.length > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="filterUser2"
-                      checked={personInvolvementFilter.user2}
-                      onCheckedChange={(checked) =>
-                        setPersonInvolvementFilter((prev) => ({
-                          ...prev,
-                          user2: !!checked,
-                        }))
-                      }
-                      className="dashboard-filter-checkbox bg-background"
-                    />
-                    <Label htmlFor="filterUser2">{userNames[1]}</Label>
-                  </div>
-                )}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="filterShared"
-                    checked={personInvolvementFilter.shared}
-                    onCheckedChange={(checked) =>
-                      setPersonInvolvementFilter((prev) => ({
-                        ...prev,
-                        shared: !!checked,
-                      }))
-                    }
-                    className="dashboard-filter-checkbox bg-background"
+                  <span className="text-lg">←</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const now = new Date();
+                    setStartDate(formatDateForInput(getFirstDayOfMonth(now)));
+                    setEndDate(formatDateForInput(getLastDayOfMonth(now)));
+                  }}
+                >
+                  This Month
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const now = new Date();
+                    const lastMonth = getFirstDayOfPreviousMonth(now);
+                    setStartDate(
+                      formatDateForInput(getFirstDayOfMonth(lastMonth))
+                    );
+                    setEndDate(
+                      formatDateForInput(getLastDayOfMonth(lastMonth))
+                    );
+                  }}
+                >
+                  Last Month
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const now = new Date();
+                    setStartDate(formatDateForInput(getFirstDayOfYear(now)));
+                    setEndDate(formatDateForInput(getLastDayOfYear(now)));
+                  }}
+                >
+                  This Year
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    const nextMonth = getFirstDayOfNextMonth(
+                      parseInputDateLocal(startDate)
+                    );
+                    setStartDate(formatDateForInput(nextMonth));
+                    setEndDate(
+                      formatDateForInput(getLastDayOfMonth(nextMonth))
+                    );
+                  }}
+                  aria-label="Next Month"
+                >
+                  <span className="text-lg">→</span>
+                </Button>
+              </div>
+              {/* From/To dates */}
+              <div className="flex gap-2">
+                <div className="flex flex-col gap-2 w-1/2">
+                  <Label htmlFor="startDate">From</Label>
+                  <Input
+                    type="date"
+                    id="startDate"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
                   />
-                  <Label htmlFor="filterShared">Shared</Label>
+                </div>
+                <div className="flex flex-col gap-2 w-1/2">
+                  <Label htmlFor="endDate">To</Label>
+                  <Input
+                    type="date"
+                    id="endDate"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+                  />
                 </div>
               </div>
+              {/* Category/Sector select */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="categorySectorFilter">
+                  Filter by Category/Sector
+                </Label>
+                <Select
+                  value={categorySectorFilter}
+                  onValueChange={setCategorySectorFilter}
+                >
+                  <SelectTrigger
+                    id="categorySectorFilter"
+                    className="w-full bg-background"
+                  >
+                    <SelectValue placeholder="All Categories/Sectors" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                    <SelectItem value="all">All Categories/Sectors</SelectItem>
+                    <SelectItem value="label_categories" disabled>
+                      Categories
+                    </SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={`cat_${cat.id}`} value={`cat_${cat.id}`}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="label_sectors" disabled>
+                      Sectors
+                    </SelectItem>
+                    {sectors.map((sec) => (
+                      <SelectItem key={`sec_${sec.id}`} value={`sec_${sec.id}`}>
+                        {sec.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Show Data for checkboxes */}
+              <div className="flex flex-col gap-2">
+                <Label>Show Data for</Label>
+                <div className="flex gap-4">
+                  {userNames && userNames.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="filterUser1"
+                        checked={personInvolvementFilter.user1}
+                        onCheckedChange={(checked) =>
+                          setPersonInvolvementFilter((prev) => ({
+                            ...prev,
+                            user1: !!checked,
+                          }))
+                        }
+                        className="dashboard-filter-checkbox bg-background"
+                      />
+                      <Label htmlFor="filterUser1">{userNames[0]}</Label>
+                    </div>
+                  )}
+                  {userNames && userNames.length > 1 && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="filterUser2"
+                        checked={personInvolvementFilter.user2}
+                        onCheckedChange={(checked) =>
+                          setPersonInvolvementFilter((prev) => ({
+                            ...prev,
+                            user2: !!checked,
+                          }))
+                        }
+                        className="dashboard-filter-checkbox bg-background"
+                      />
+                      <Label htmlFor="filterUser2">{userNames[1]}</Label>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="filterShared"
+                      checked={personInvolvementFilter.shared}
+                      onCheckedChange={(checked) =>
+                        setPersonInvolvementFilter((prev) => ({
+                          ...prev,
+                          shared: !!checked,
+                        }))
+                      }
+                      className="dashboard-filter-checkbox bg-background"
+                    />
+                    <Label htmlFor="filterShared">Shared</Label>
+                  </div>
+                </div>
+              </div>
+              {/* Description filter */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="descriptionFilter">Filter by Description</Label>
+                <Input
+                  type="text"
+                  id="descriptionFilter"
+                  value={descriptionFilter}
+                  onChange={(e) => setDescriptionFilter(e.target.value)}
+                  placeholder="Search description..."
+                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
+                />
+              </div>
             </div>
-            {/* Description filter */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="descriptionFilter">Filter by Description</Label>
-              <Input
-                type="text"
-                id="descriptionFilter"
-                value={descriptionFilter}
-                onChange={(e) => setDescriptionFilter(e.target.value)}
-                placeholder="Search description..."
-                className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-              />
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+          </SheetContent>
+        </Sheet>
 
-      <BalanceSummary
-        transactionsInDateRange={transactionsInDateRange}
-        showValues={showValues}
-      />
-      <ExpensesIncomeNetWidget
-        transactionsInDateRange={effectiveTransactions.filter((t) => {
-          // Apply the same filters as expensesForWidgetsFiltered, but allow all transaction types
-          if (categorySectorFilter === "all") {
-            return (
-              !descriptionFilter ||
-              (t.description &&
-                t.description
+        <BalanceSummary
+          transactionsInDateRange={transactionsInDateRange}
+          showValues={showValues}
+        />
+        <ExpensesIncomeNetWidget
+          transactionsInDateRange={effectiveTransactions.filter((t) => {
+            // Apply the same filters as expensesForWidgetsFiltered, but allow all transaction types
+            if (categorySectorFilter === "all") {
+              return (
+                !descriptionFilter ||
+                (t.description &&
+                  t.description
+                    .toLowerCase()
+                    .includes(descriptionFilter.toLowerCase()))
+              );
+            }
+            const [filterType, filterId] = categorySectorFilter.split("_");
+            const type = t.transaction_type || "expense";
+            const categoryIdToMatch = t.category_id;
+            if (!categoryIdToMatch) return false;
+            if (
+              descriptionFilter &&
+              (!t.description ||
+                !t.description
                   .toLowerCase()
                   .includes(descriptionFilter.toLowerCase()))
-            );
-          }
-          const [filterType, filterId] = categorySectorFilter.split("_");
-          const type = t.transaction_type || "expense";
-          const categoryIdToMatch = t.category_id;
-          if (!categoryIdToMatch) return false;
-          if (
-            descriptionFilter &&
-            (!t.description ||
-              !t.description
-                .toLowerCase()
-                .includes(descriptionFilter.toLowerCase()))
-          ) {
-            return false;
-          }
-          if (filterType === "cat") {
-            return filterId === categoryIdToMatch;
-          }
-          if (filterType === "sec") {
-            const selectedSector = sectors.find(
-              (s) => s.id === (filterId as string)
-            );
-            if (!selectedSector || !selectedSector.category_ids) return false;
-            return selectedSector.category_ids.includes(categoryIdToMatch);
-          }
-          return true;
-        })}
-        // Pass all transactions for trend calculation
-        context={{
-          userNames,
-          personInvolvementFilter,
-          allTransactions: allTransactionsState,
-        }}
-        showValues={showValues}
-      />
-      <div className="mb-8">
-        <CategoryBreakdownWidget
-          transactionsInDateRange={expensesForWidgetsFiltered}
-        />
-        {/* Pie chart for sector/category breakdown */}
-        <SectorCategoryPieChart
-          transactionsInDateRange={expensesForWidgetsFiltered}
-          categories={categories}
-          sectors={sectors}
+            ) {
+              return false;
+            }
+            if (filterType === "cat") {
+              return filterId === categoryIdToMatch;
+            }
+            if (filterType === "sec") {
+              const selectedSector = sectors.find(
+                (s) => s.id === (filterId as string)
+              );
+              if (!selectedSector || !selectedSector.category_ids) return false;
+              return selectedSector.category_ids.includes(categoryIdToMatch);
+            }
+            return true;
+          })}
+          // Pass all transactions for trend calculation
+          context={{
+            userNames,
+            personInvolvementFilter,
+            allTransactions: allTransactionsState,
+          }}
           showValues={showValues}
-          emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
+        />
+        <div className="mb-8">
+          <CategoryBreakdownWidget
+            transactionsInDateRange={expensesForWidgetsFiltered}
+          />
+          {/* Pie chart for sector/category breakdown */}
+          <SectorCategoryPieChart
+            transactionsInDateRange={expensesForWidgetsFiltered}
+            categories={categories}
+            sectors={sectors}
+            showValues={showValues}
+            emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
+          />
+        </div>
+        <TransactionList
+          className="mt-0"
+          transactions={finalFilteredTransactionsForDisplay}
+          deleteTransaction={deleteTransaction}
+          showValues={showValues}
         />
       </div>
-      <TransactionList
-        className="mt-0"
-        transactions={finalFilteredTransactionsForDisplay}
-        deleteTransaction={deleteTransaction}
-        showValues={showValues}
-      />
-    </div>
+      <DuckFabNav />
+    </>
   );
 };
 

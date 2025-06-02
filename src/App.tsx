@@ -344,9 +344,6 @@ const App: React.FC = () => {
             </Button>
           ))}
         </div>
-        <div className="md:hidden flex items-center">
-          <MobileMenu navLinks={navLinks} location={location} />
-        </div>
       </nav>
       {/* Hero section with BankerQuack image */}
       <div

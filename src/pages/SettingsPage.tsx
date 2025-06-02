@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "../supabaseClient";
+import DuckFabNav from "@/components/dashboard/DuckFabNav";
 
 interface SettingsPageContext {
   userNames: string[];
@@ -350,20 +351,166 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full p-4 space-y-8">
-      <h2 className="text-2xl font-bold mb-4">Settings</h2>
+    <>
+      <div className="max-w-3xl mx-auto w-full p-4 space-y-8">
+        <h2 className="text-2xl font-bold mb-4">Settings</h2>
 
-      {/* User Names Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Names</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleUserNamesSave} className="space-y-0">
-            {/* Mobile layout: stacked, visible below md */}
-            <div className="block md:hidden">
-              <div className="flex flex-col items-center gap-4 mb-6">
-                <div className="flex flex-col items-center justify-center w-full">
+        {/* User Names Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Names</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUserNamesSave} className="space-y-0">
+              {/* Mobile layout: stacked, visible below md */}
+              <div className="block md:hidden">
+                <div className="flex flex-col items-center gap-4 mb-6">
+                  <div className="flex flex-col items-center justify-center w-full">
+                    <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
+                      {user1ImageUrl ? (
+                        <img
+                          src={user1ImageUrl}
+                          alt="User 1 avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : user1Image ? (
+                        <img
+                          src={user1Image}
+                          alt="User 1 avatar preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-2xl text-muted-foreground">
+                          🦆
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="user1Image"
+                      className="sr-only"
+                      onChange={(e) => handleImageChange(e, setUser1Image, 1)}
+                      disabled={uploadingUser === 1}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        document.getElementById("user1Image")?.click()
+                      }
+                      disabled={uploadingUser === 1}
+                      className="w-32 text-xs mt-1"
+                    >
+                      {user1ImageUrl || user1Image
+                        ? "Change File"
+                        : "Choose File"}
+                    </Button>
+                    {user1Image && !user1ImageUrl && (
+                      <span className="text-xs text-muted-foreground">
+                        Selected
+                      </span>
+                    )}
+                    {uploadingUser === 1 && (
+                      <span className="text-xs text-muted-foreground">
+                        Uploading...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center w-full">
+                    <Label
+                      htmlFor="user1Name"
+                      className="mb-2 w-full text-center"
+                    >
+                      User 1 Name
+                    </Label>
+                    <Input
+                      type="text"
+                      id="user1Name"
+                      value={user1NameInput}
+                      onChange={(e) => setUser1NameInput(e.target.value)}
+                      required
+                      className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-4 mb-6">
+                  <div className="flex flex-col items-center justify-center w-full">
+                    <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
+                      {user2ImageUrl ? (
+                        <img
+                          src={user2ImageUrl}
+                          alt="User 2 avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : user2Image ? (
+                        <img
+                          src={user2Image}
+                          alt="User 2 avatar preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-2xl text-muted-foreground">
+                          🦆
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="user2Image"
+                      className="sr-only"
+                      onChange={(e) => handleImageChange(e, setUser2Image, 2)}
+                      disabled={uploadingUser === 2}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        document.getElementById("user2Image")?.click()
+                      }
+                      disabled={uploadingUser === 2}
+                      className="w-32 text-xs mt-1"
+                    >
+                      {user2ImageUrl || user2Image
+                        ? "Change File"
+                        : "Choose File"}
+                    </Button>
+                    {user2Image && !user2ImageUrl && (
+                      <span className="text-xs text-muted-foreground">
+                        Selected
+                      </span>
+                    )}
+                    {uploadingUser === 2 && (
+                      <span className="text-xs text-muted-foreground">
+                        Uploading...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center w-full">
+                    <Label
+                      htmlFor="user2Name"
+                      className="mb-2 w-full text-center"
+                    >
+                      User 2 Name
+                    </Label>
+                    <Input
+                      type="text"
+                      id="user2Name"
+                      value={user2NameInput}
+                      onChange={(e) => setUser2NameInput(e.target.value)}
+                      required
+                      className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Desktop layout: 2x2 grid, visible md+ */}
+              <div className="hidden md:grid grid-cols-2 gap-8 mb-6">
+                {/* User 1 Avatar/Change File */}
+                <div className="flex flex-col items-center justify-center">
                   <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
                     {user1ImageUrl ? (
                       <img
@@ -414,25 +561,8 @@ const SettingsPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="flex flex-col items-center w-full">
-                  <Label
-                    htmlFor="user1Name"
-                    className="mb-2 w-full text-center"
-                  >
-                    User 1 Name
-                  </Label>
-                  <Input
-                    type="text"
-                    id="user1Name"
-                    value={user1NameInput}
-                    onChange={(e) => setUser1NameInput(e.target.value)}
-                    required
-                    className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-4 mb-6">
-                <div className="flex flex-col items-center justify-center w-full">
+                {/* User 2 Avatar/Change File */}
+                <div className="flex flex-col items-center justify-center">
                   <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
                     {user2ImageUrl ? (
                       <img
@@ -483,10 +613,28 @@ const SettingsPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="flex flex-col items-center w-full">
+                {/* User 1 Name/Input */}
+                <div className="flex flex-col items-center md:items-start justify-center">
+                  <Label
+                    htmlFor="user1Name"
+                    className="mb-2 w-full md:w-auto text-center md:text-left"
+                  >
+                    User 1 Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id="user1Name"
+                    value={user1NameInput}
+                    onChange={(e) => setUser1NameInput(e.target.value)}
+                    required
+                    className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
+                  />
+                </div>
+                {/* User 2 Name/Input */}
+                <div className="flex flex-col items-center md:items-start justify-center">
                   <Label
                     htmlFor="user2Name"
-                    className="mb-2 w-full text-center"
+                    className="mb-2 w-full md:w-auto text-center md:text-left"
                   >
                     User 2 Name
                   </Label>
@@ -500,282 +648,327 @@ const SettingsPage: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
-            {/* Desktop layout: 2x2 grid, visible md+ */}
-            <div className="hidden md:grid grid-cols-2 gap-8 mb-6">
-              {/* User 1 Avatar/Change File */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
-                  {user1ImageUrl ? (
-                    <img
-                      src={user1ImageUrl}
-                      alt="User 1 avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : user1Image ? (
-                    <img
-                      src={user1Image}
-                      alt="User 1 avatar preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl text-muted-foreground">🦆</span>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="user1Image"
-                  className="sr-only"
-                  onChange={(e) => handleImageChange(e, setUser1Image, 1)}
-                  disabled={uploadingUser === 1}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById("user1Image")?.click()}
-                  disabled={uploadingUser === 1}
-                  className="w-32 text-xs mt-1"
-                >
-                  {user1ImageUrl || user1Image ? "Change File" : "Choose File"}
+              <div className="flex justify-center">
+                <Button type="submit" className="mt-2">
+                  Save User Names
                 </Button>
-                {user1Image && !user1ImageUrl && (
-                  <span className="text-xs text-muted-foreground">
-                    Selected
-                  </span>
-                )}
-                {uploadingUser === 1 && (
-                  <span className="text-xs text-muted-foreground">
-                    Uploading...
-                  </span>
-                )}
               </div>
-              {/* User 2 Avatar/Change File */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
-                  {user2ImageUrl ? (
-                    <img
-                      src={user2ImageUrl}
-                      alt="User 2 avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : user2Image ? (
-                    <img
-                      src={user2Image}
-                      alt="User 2 avatar preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl text-muted-foreground">🦆</span>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="user2Image"
-                  className="sr-only"
-                  onChange={(e) => handleImageChange(e, setUser2Image, 2)}
-                  disabled={uploadingUser === 2}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById("user2Image")?.click()}
-                  disabled={uploadingUser === 2}
-                  className="w-32 text-xs mt-1"
-                >
-                  {user2ImageUrl || user2Image ? "Change File" : "Choose File"}
-                </Button>
-                {user2Image && !user2ImageUrl && (
-                  <span className="text-xs text-muted-foreground">
-                    Selected
-                  </span>
-                )}
-                {uploadingUser === 2 && (
-                  <span className="text-xs text-muted-foreground">
-                    Uploading...
-                  </span>
-                )}
-              </div>
-              {/* User 1 Name/Input */}
-              <div className="flex flex-col items-center md:items-start justify-center">
-                <Label
-                  htmlFor="user1Name"
-                  className="mb-2 w-full md:w-auto text-center md:text-left"
-                >
-                  User 1 Name
-                </Label>
-                <Input
-                  type="text"
-                  id="user1Name"
-                  value={user1NameInput}
-                  onChange={(e) => setUser1NameInput(e.target.value)}
-                  required
-                  className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
-                />
-              </div>
-              {/* User 2 Name/Input */}
-              <div className="flex flex-col items-center md:items-start justify-center">
-                <Label
-                  htmlFor="user2Name"
-                  className="mb-2 w-full md:w-auto text-center md:text-left"
-                >
-                  User 2 Name
-                </Label>
-                <Input
-                  type="text"
-                  id="user2Name"
-                  value={user2NameInput}
-                  onChange={(e) => setUser2NameInput(e.target.value)}
-                  required
-                  className="h-9 rounded-md px-3 py-2 bg-background text-sm w-full max-w-xs"
-                />
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <Button type="submit" className="mt-2">
-                Save User Names
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Empty State Image for Sector & Category Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Empty State Image (Sector & Category Breakdown)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-lg bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
-                {emptyStateImageUrl ? (
-                  <img
-                    src={emptyStateImageUrl}
-                    alt="Empty state preview"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <span className="text-4xl text-muted-foreground">🖼️</span>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                id="emptyStateImageInput"
-                className="sr-only"
-                onChange={handleEmptyStateImageChange}
-                disabled={uploadingEmptyStateImage}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  document.getElementById("emptyStateImageInput")?.click()
-                }
-                disabled={uploadingEmptyStateImage}
-                className="w-32 text-xs mt-1"
-              >
-                {emptyStateImageUrl ? "Change Image" : "Upload Image"}
-              </Button>
-              {uploadingEmptyStateImage && (
-                <span className="text-xs text-muted-foreground mt-1">
-                  Uploading...
-                </span>
-              )}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-2">
-                This image will be shown in the dashboard's sector & category
-                breakdown widget when there is no data to display.
-              </p>
-              {emptyStateImageUrl && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleRemoveEmptyStateImage}
-                  className="text-xs mt-2"
+        {/* Empty State Image for Sector & Category Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Empty State Image (Sector & Category Breakdown)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="flex flex-col items-center">
+                <div className="w-32 h-32 rounded-lg bg-muted-foreground/10 flex items-center justify-center overflow-hidden border mb-2">
+                  {emptyStateImageUrl ? (
+                    <img
+                      src={emptyStateImageUrl}
+                      alt="Empty state preview"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-4xl text-muted-foreground">🖼️</span>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="emptyStateImageInput"
+                  className="sr-only"
+                  onChange={handleEmptyStateImageChange}
                   disabled={uploadingEmptyStateImage}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    document.getElementById("emptyStateImageInput")?.click()
+                  }
+                  disabled={uploadingEmptyStateImage}
+                  className="w-32 text-xs mt-1"
                 >
-                  Remove Image
+                  {emptyStateImageUrl ? "Change Image" : "Upload Image"}
                 </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Categories Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Categories</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAddCategory} className="flex gap-2 mb-4">
-            <Label htmlFor="newCategory" className="sr-only">
-              Add New Category
-            </Label>
-            <Input
-              type="text"
-              id="newCategory"
-              value={newCategoryInput}
-              onChange={(e) => setNewCategoryInput(e.target.value)}
-              placeholder="New category name"
-            />
-            <Button type="submit">Add Category</Button>
-          </form>
-          <h4 className="font-semibold mb-2">Existing Categories</h4>
-          {categories.length === 0 ? (
-            <p className="text-muted-foreground">No categories defined.</p>
-          ) : (
-            <>
-              <ul className="space-y-4">
-                {categories.map((cat) => (
-                  <li
-                    key={cat.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
+                {uploadingEmptyStateImage && (
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Uploading...
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground mb-2">
+                  This image will be shown in the dashboard's sector & category
+                  breakdown widget when there is no data to display.
+                </p>
+                {emptyStateImageUrl && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveEmptyStateImage}
+                    className="text-xs mt-2"
+                    disabled={uploadingEmptyStateImage}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
-                        {categoryImagePreviews[cat.id] || cat.image_url ? (
-                          <img
-                            src={categoryImagePreviews[cat.id] || cat.image_url}
-                            alt={cat.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xl text-muted-foreground">
-                            🗂️
+                    Remove Image
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Categories Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddCategory} className="flex gap-2 mb-4">
+              <Label htmlFor="newCategory" className="sr-only">
+                Add New Category
+              </Label>
+              <Input
+                type="text"
+                id="newCategory"
+                value={newCategoryInput}
+                onChange={(e) => setNewCategoryInput(e.target.value)}
+                placeholder="New category name"
+              />
+              <Button type="submit">Add Category</Button>
+            </form>
+            <h4 className="font-semibold mb-2">Existing Categories</h4>
+            {categories.length === 0 ? (
+              <p className="text-muted-foreground">No categories defined.</p>
+            ) : (
+              <>
+                <ul className="space-y-4">
+                  {categories.map((cat) => (
+                    <li
+                      key={cat.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border">
+                          {categoryImagePreviews[cat.id] || cat.image_url ? (
+                            <img
+                              src={
+                                categoryImagePreviews[cat.id] || cat.image_url
+                              }
+                              alt={cat.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xl text-muted-foreground">
+                              🗂️
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          {editingCategoryId === cat.id ? (
+                            <form
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (
+                                  editingCategoryName.trim() &&
+                                  updateCategory
+                                ) {
+                                  await updateCategory(
+                                    cat.id,
+                                    editingCategoryName.trim()
+                                  );
+                                  setEditingCategoryId(null);
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Input
+                                value={editingCategoryName}
+                                onChange={(e) =>
+                                  setEditingCategoryName(e.target.value)
+                                }
+                                className="h-8 text-sm px-2 py-1"
+                                autoFocus
+                              />
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="px-2 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="px-2 text-xs"
+                                onClick={() => setEditingCategoryId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </form>
+                          ) : (
+                            <span className="font-medium text-base leading-tight break-words max-w-[140px] sm:max-w-none">
+                              {cat.name}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="ml-1 p-1 text-xs"
+                                onClick={() => {
+                                  setEditingCategoryId(cat.id);
+                                  setEditingCategoryName(cat.name);
+                                }}
+                                aria-label="Edit category name"
+                              >
+                                ✏️
+                              </Button>
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            (ID: {cat.id.substring(0, 6)})
+                          </span>
+                        </div>
+                      </div>
+                      {/* Hidden file input outside the flex container */}
+                      <input
+                        ref={(el) => {
+                          fileInputRefs.current[cat.id] = el;
+                        }}
+                        type="file"
+                        accept="image/*"
+                        id={`catimg_${cat.id}`}
+                        className="sr-only"
+                        onChange={(e) => handleCategoryImageChange(e, cat.id)}
+                        disabled={uploadingCategoryId === cat.id}
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRefs.current[cat.id]?.click()}
+                          disabled={uploadingCategoryId === cat.id}
+                          className="text-xs w-full sm:w-auto"
+                        >
+                          {cat.image_url || categoryImagePreviews[cat.id]
+                            ? "Change Image"
+                            : "Add Image"}
+                        </Button>
+                        {uploadingCategoryId === cat.id && (
+                          <span className="text-xs text-muted-foreground">
+                            Uploading...
                           </span>
                         )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteCategoryDialog(cat)}
+                          className="text-xs w-full sm:w-auto"
+                        >
+                          Delete
+                        </Button>
                       </div>
+                    </li>
+                  ))}
+                </ul>
+                <AlertDialog
+                  open={!!deleteCategoryDialog}
+                  onOpenChange={(open) =>
+                    !open && setDeleteCategoryDialog(null)
+                  }
+                >
+                  <AlertDialogTrigger asChild />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete the category "
+                        {deleteCategoryDialog?.name}"? This will also remove it
+                        from any sectors.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel
+                        onClick={() => setDeleteCategoryDialog(null)}
+                      >
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (deleteCategoryDialog) {
+                            deleteCategory(deleteCategoryDialog);
+                            setDeleteCategoryDialog(null);
+                          }
+                        }}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sectors Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Sectors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddSector} className="flex gap-2 mb-4">
+              <Label htmlFor="newSector" className="sr-only">
+                Add New Sector
+              </Label>
+              <Input
+                type="text"
+                id="newSector"
+                value={newSectorInput}
+                onChange={(e) => setNewSectorInput(e.target.value)}
+                placeholder="New sector name"
+              />
+              <Button type="submit">Add Sector</Button>
+            </form>
+            <h4 className="font-semibold mb-2">Existing Sectors</h4>
+            {sectors.length === 0 ? (
+              <p className="text-muted-foreground">No sectors defined.</p>
+            ) : (
+              <>
+                <ul className="space-y-4">
+                  {sectors.map((sec) => (
+                    <li
+                      key={sec.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
+                    >
                       <div className="flex flex-col">
-                        {editingCategoryId === cat.id ? (
+                        {editingSectorId === sec.id ? (
                           <form
                             onSubmit={async (e) => {
                               e.preventDefault();
-                              if (
-                                editingCategoryName.trim() &&
-                                updateCategory
-                              ) {
-                                await updateCategory(
-                                  cat.id,
-                                  editingCategoryName.trim()
+                              if (editingSectorName.trim() && updateSector) {
+                                await updateSector(
+                                  sec.id,
+                                  editingSectorName.trim()
                                 );
-                                setEditingCategoryId(null);
+                                setEditingSectorId(null);
                               }
                             }}
                             className="flex items-center gap-2"
                           >
                             <Input
-                              value={editingCategoryName}
+                              value={editingSectorName}
                               onChange={(e) =>
-                                setEditingCategoryName(e.target.value)
+                                setEditingSectorName(e.target.value)
                               }
                               className="h-8 text-sm px-2 py-1"
                               autoFocus
@@ -792,360 +985,189 @@ const SettingsPage: React.FC = () => {
                               size="sm"
                               variant="ghost"
                               className="px-2 text-xs"
-                              onClick={() => setEditingCategoryId(null)}
+                              onClick={() => setEditingSectorId(null)}
                             >
                               Cancel
                             </Button>
                           </form>
                         ) : (
-                          <span className="font-medium text-base leading-tight break-words max-w-[140px] sm:max-w-none">
-                            {cat.name}
+                          <span className="font-medium text-base leading-tight break-words max-w-[180px] sm:max-w-none">
+                            {sec.name}
                             <Button
                               type="button"
                               size="icon"
                               variant="ghost"
                               className="ml-1 p-1 text-xs"
                               onClick={() => {
-                                setEditingCategoryId(cat.id);
-                                setEditingCategoryName(cat.name);
+                                setEditingSectorId(sec.id);
+                                setEditingSectorName(sec.name);
                               }}
-                              aria-label="Edit category name"
+                              aria-label="Edit sector name"
                             >
                               ✏️
                             </Button>
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          (ID: {cat.id.substring(0, 6)})
+                          (ID: {sec.id.substring(0, 6)})
                         </span>
                       </div>
-                    </div>
-                    {/* Hidden file input outside the flex container */}
-                    <input
-                      ref={(el) => {
-                        fileInputRefs.current[cat.id] = el;
-                      }}
-                      type="file"
-                      accept="image/*"
-                      id={`catimg_${cat.id}`}
-                      className="sr-only"
-                      onChange={(e) => handleCategoryImageChange(e, cat.id)}
-                      disabled={uploadingCategoryId === cat.id}
-                    />
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRefs.current[cat.id]?.click()}
-                        disabled={uploadingCategoryId === cat.id}
-                        className="text-xs w-full sm:w-auto"
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteSectorDialog(sec)}
+                          className="text-xs w-full sm:w-auto"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <AlertDialog
+                  open={!!deleteSectorDialog}
+                  onOpenChange={(open) => !open && setDeleteSectorDialog(null)}
+                >
+                  <AlertDialogTrigger asChild />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Sector</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete the sector "
+                        {deleteSectorDialog?.name}"? All category associations
+                        for this sector will be removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel
+                        onClick={() => setDeleteSectorDialog(null)}
                       >
-                        {cat.image_url || categoryImagePreviews[cat.id]
-                          ? "Change Image"
-                          : "Add Image"}
-                      </Button>
-                      {uploadingCategoryId === cat.id && (
-                        <span className="text-xs text-muted-foreground">
-                          Uploading...
-                        </span>
-                      )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteCategoryDialog(cat)}
-                        className="text-xs w-full sm:w-auto"
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (deleteSectorDialog) {
+                            deleteSector(deleteSectorDialog.id);
+                            setDeleteSectorDialog(null);
+                          }
+                        }}
                       >
                         Delete
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <AlertDialog
-                open={!!deleteCategoryDialog}
-                onOpenChange={(open) => !open && setDeleteCategoryDialog(null)}
-              >
-                <AlertDialogTrigger asChild />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete the category "
-                      {deleteCategoryDialog?.name}"? This will also remove it
-                      from any sectors.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel
-                      onClick={() => setDeleteCategoryDialog(null)}
-                    >
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        if (deleteCategoryDialog) {
-                          deleteCategory(deleteCategoryDialog);
-                          setDeleteCategoryDialog(null);
-                        }
-                      }}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Sectors Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Sectors</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAddSector} className="flex gap-2 mb-4">
-            <Label htmlFor="newSector" className="sr-only">
-              Add New Sector
-            </Label>
-            <Input
-              type="text"
-              id="newSector"
-              value={newSectorInput}
-              onChange={(e) => setNewSectorInput(e.target.value)}
-              placeholder="New sector name"
-            />
-            <Button type="submit">Add Sector</Button>
-          </form>
-          <h4 className="font-semibold mb-2">Existing Sectors</h4>
-          {sectors.length === 0 ? (
-            <p className="text-muted-foreground">No sectors defined.</p>
-          ) : (
-            <>
+        {/* Add Category to Sector */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Add Category to Sector</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sectors.length === 0 || categories.length === 0 ? (
+              <p className="text-muted-foreground">
+                Add sectors and categories first.
+              </p>
+            ) : (
               <ul className="space-y-4">
                 {sectors.map((sec) => (
                   <li
                     key={sec.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-2 rounded-lg bg-background/80"
+                    className="pb-4 mb-4 border-b border-border last:border-b-0 last:mb-0 last:pb-0"
                   >
-                    <div className="flex flex-col">
-                      {editingSectorId === sec.id ? (
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-                            if (editingSectorName.trim() && updateSector) {
-                              await updateSector(
-                                sec.id,
-                                editingSectorName.trim()
-                              );
-                              setEditingSectorId(null);
-                            }
-                          }}
-                          className="flex items-center gap-2"
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const catId = selectedCategoryForSector[sec.id];
+                        if (sec.id && catId) {
+                          addCategoryToSector(sec.id, catId);
+                          setSelectedCategoryForSector((prev) => ({
+                            ...prev,
+                            [sec.id]: "",
+                          }));
+                        } else {
+                          alert("Please select a category to add.");
+                        }
+                      }}
+                      className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
+                    >
+                      <span className="font-medium sm:flex-1">{sec.name}</span>
+                      <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:justify-end sm:items-center sm:gap-2">
+                        <Select
+                          value={selectedCategoryForSector[sec.id] || ""}
+                          onValueChange={(val) =>
+                            setSelectedCategoryForSector((prev) => ({
+                              ...prev,
+                              [sec.id]: val,
+                            }))
+                          }
                         >
-                          <Input
-                            value={editingSectorName}
-                            onChange={(e) =>
-                              setEditingSectorName(e.target.value)
-                            }
-                            className="h-8 text-sm px-2 py-1"
-                            autoFocus
-                          />
-                          <Button
-                            type="submit"
-                            size="sm"
-                            className="px-2 text-xs"
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="px-2 text-xs"
-                            onClick={() => setEditingSectorId(null)}
-                          >
-                            Cancel
-                          </Button>
-                        </form>
-                      ) : (
-                        <span className="font-medium text-base leading-tight break-words max-w-[180px] sm:max-w-none">
-                          {sec.name}
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="ml-1 p-1 text-xs"
-                            onClick={() => {
-                              setEditingSectorId(sec.id);
-                              setEditingSectorName(sec.name);
-                            }}
-                            aria-label="Edit sector name"
-                          >
-                            ✏️
-                          </Button>
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        (ID: {sec.id.substring(0, 6)})
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteSectorDialog(sec)}
-                        className="text-xs w-full sm:w-auto"
-                      >
-                        Delete
-                      </Button>
-                    </div>
+                          <SelectTrigger className="w-full sm:w-48 bg-background">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          className="w-full sm:w-auto sm:ml-2"
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </form>
+                    {sec.category_ids && sec.category_ids.length > 0 && (
+                      <div className="ml-8 mt-1">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Categories:
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {sec.category_ids.map((catId: string) => {
+                            const cat = categories.find((c) => c.id === catId);
+                            return cat ? (
+                              <span
+                                key={cat.id}
+                                className="inline-flex items-center bg-muted-foreground/10 text-foreground px-2 py-0.5 rounded-md text-xs font-medium shadow-sm"
+                              >
+                                {cat.name}
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="ml-1 h-4 w-4 p-0 text-xs"
+                                  onClick={() =>
+                                    removeCategoryFromSector(sec.id, cat.id)
+                                  }
+                                  aria-label={`Remove ${cat.name} from sector`}
+                                >
+                                  ×
+                                </Button>
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
-              <AlertDialog
-                open={!!deleteSectorDialog}
-                onOpenChange={(open) => !open && setDeleteSectorDialog(null)}
-              >
-                <AlertDialogTrigger asChild />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Sector</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete the sector "
-                      {deleteSectorDialog?.name}"? All category associations for
-                      this sector will be removed.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel
-                      onClick={() => setDeleteSectorDialog(null)}
-                    >
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        if (deleteSectorDialog) {
-                          deleteSector(deleteSectorDialog.id);
-                          setDeleteSectorDialog(null);
-                        }
-                      }}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Add Category to Sector */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Category to Sector</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {sectors.length === 0 || categories.length === 0 ? (
-            <p className="text-muted-foreground">
-              Add sectors and categories first.
-            </p>
-          ) : (
-            <ul className="space-y-4">
-              {sectors.map((sec) => (
-                <li
-                  key={sec.id}
-                  className="pb-4 mb-4 border-b border-border last:border-b-0 last:mb-0 last:pb-0"
-                >
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const catId = selectedCategoryForSector[sec.id];
-                      if (sec.id && catId) {
-                        addCategoryToSector(sec.id, catId);
-                        setSelectedCategoryForSector((prev) => ({
-                          ...prev,
-                          [sec.id]: "",
-                        }));
-                      } else {
-                        alert("Please select a category to add.");
-                      }
-                    }}
-                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
-                  >
-                    <span className="font-medium sm:flex-1">{sec.name}</span>
-                    <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:justify-end sm:items-center sm:gap-2">
-                      <Select
-                        value={selectedCategoryForSector[sec.id] || ""}
-                        onValueChange={(val) =>
-                          setSelectedCategoryForSector((prev) => ({
-                            ...prev,
-                            [sec.id]: val,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-full sm:w-48 bg-background">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="submit"
-                        size="sm"
-                        className="w-full sm:w-auto sm:ml-2"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </form>
-                  {sec.category_ids && sec.category_ids.length > 0 && (
-                    <div className="ml-8 mt-1">
-                      <div className="text-xs text-muted-foreground mb-1">
-                        Categories:
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {sec.category_ids.map((catId: string) => {
-                          const cat = categories.find((c) => c.id === catId);
-                          return cat ? (
-                            <span
-                              key={cat.id}
-                              className="inline-flex items-center bg-muted-foreground/10 text-foreground px-2 py-0.5 rounded-md text-xs font-medium shadow-sm"
-                            >
-                              {cat.name}
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="destructive"
-                                className="ml-1 h-4 w-4 p-0 text-xs"
-                                onClick={() =>
-                                  removeCategoryFromSector(sec.id, cat.id)
-                                }
-                                aria-label={`Remove ${cat.name} from sector`}
-                              >
-                                ×
-                              </Button>
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <DuckFabNav />
+    </>
   );
 };
 
