@@ -415,7 +415,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4">
+      <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4 pb-32">
         <div className="relative flex items-end mb-2">
           <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
           <button

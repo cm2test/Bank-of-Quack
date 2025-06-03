@@ -23,45 +23,12 @@ const NAV_LINKS = [
 
 const DuckFabNav: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
-
-  // Show FAB for 1s on mount and after scroll
-  useEffect(() => {
-    const showFab = () => {
-      setVisible(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setVisible(false);
-      }, 1000);
-    };
-    // Show on mount
-    showFab();
-    // Show on scroll
-    const handleScroll = () => {
-      showFab();
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  // Keep visible if menu is open
-  useEffect(() => {
-    if (open) setVisible(true);
-  }, [open]);
 
   const handleNav = (to: string) => {
     setOpen(false);
-    setVisible(false);
     navigate(to);
   };
-
-  // Hide FAB if not visible and not open
-  if (!visible && !open) return null;
 
   return (
     <>
