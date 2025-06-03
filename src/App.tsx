@@ -366,12 +366,11 @@ const App: React.FC = () => {
         />
         {/* Animated Cursive Text Overlay */}
         <span
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl sm:text-5xl font-bold pointer-events-none select-none animate-typewriter whitespace-nowrap"
+          className="absolute left-1/2 top-2/3 -translate-x-1/2 -translate-y-1/2 text-5xl sm:text-8xl font-bold pointer-events-none select-none animate-typewriter whitespace-nowrap"
           style={{
             color: "#FFD700",
             fontWeight: 700,
-            fontFamily: "'Great Vibes', cursive",
-            WebkitTextStroke: "0.5px black",
+            fontFamily: "cursive",
             WebkitTextFillColor: "#FFD700",
             textShadow: "0 2px 8px #000, 0 0px 2px #000",
             zIndex: 10,
@@ -491,7 +490,30 @@ function TypewriterText({
     }
     return () => clearTimeout(timeout);
   }, [index, text, speed, pause]);
-  return <>{displayed}</>;
+
+  // Render with special font for 'Q' in 'Bank of Quack'
+  const qIndex = text.indexOf("Q");
+  if (qIndex === -1) return <>{displayed}</>;
+  // Split displayed into before Q, Q, after Q
+  const beforeQ = displayed.slice(0, qIndex);
+  const qChar = displayed[qIndex] || "";
+  const afterQ = displayed.slice(qIndex + 1);
+  return (
+    <>
+      {beforeQ}
+      {qChar && (
+        <span
+          style={{
+            fontFamily: "Dancing Script, cursive",
+            display: "inline-block",
+          }}
+        >
+          {qChar}
+        </span>
+      )}
+      {afterQ}
+    </>
+  );
 }
 
 export default App;
