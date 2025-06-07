@@ -12,6 +12,9 @@ interface TransactionListProps {
   deleteTransaction: (id: string) => void;
   className?: string;
   showValues?: boolean;
+  incomeImageUrl?: string | null;
+  settlementImageUrl?: string | null;
+  reimbursementImageUrl?: string | null;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -19,6 +22,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
   deleteTransaction,
   className = "",
   showValues = true,
+  incomeImageUrl,
+  settlementImageUrl,
+  reimbursementImageUrl,
 }) => {
   const {
     userNames,
@@ -150,6 +156,39 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                 src={cat.image_url}
                                 alt={cat.name}
                                 className="w-10 h-10 rounded-xl object-cover bg-white border border-border"
+                              />
+                            );
+                          }
+                        }
+                        // Show transaction type image if no category image
+                        if (!catImg) {
+                          if (type === "income" && incomeImageUrl) {
+                            return (
+                              <img
+                                src={incomeImageUrl}
+                                alt="Income"
+                                className="w-10 h-10 rounded-xl object-contain bg-white border border-border"
+                              />
+                            );
+                          }
+                          if (type === "settlement" && settlementImageUrl) {
+                            return (
+                              <img
+                                src={settlementImageUrl}
+                                alt="Settlement"
+                                className="w-10 h-10 rounded-xl object-contain bg-white border border-border"
+                              />
+                            );
+                          }
+                          if (
+                            type === "reimbursement" &&
+                            reimbursementImageUrl
+                          ) {
+                            return (
+                              <img
+                                src={reimbursementImageUrl}
+                                alt="Reimbursement"
+                                className="w-10 h-10 rounded-xl object-contain bg-white border border-border"
                               />
                             );
                           }

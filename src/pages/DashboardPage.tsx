@@ -93,9 +93,47 @@ const DashboardPage: React.FC = () => {
   const [descriptionFilter, setDescriptionFilter] = useState("");
   const [showValues, setShowValues] = useState(true);
 
+  // Add state for transaction type images
+  const [incomeImageUrl, setIncomeImageUrl] = useState<string | null>(null);
+  const [settlementImageUrl, setSettlementImageUrl] = useState<string | null>(
+    null
+  );
+  const [reimbursementImageUrl, setReimbursementImageUrl] = useState<
+    string | null
+  >(null);
+
   useEffect(() => {
     setAllTransactionsState(transactions);
   }, [transactions]);
+
+  useEffect(() => {
+    // Fetch transaction type images from app_settings
+    const fetchTransactionTypeImages = async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", [
+          "income_image_url",
+          "settlement_image_url",
+          "reimbursement_image_url",
+        ]);
+      if (data) {
+        const income = data.find((s: any) => s.key === "income_image_url");
+        const settlement = data.find(
+          (s: any) => s.key === "settlement_image_url"
+        );
+        const reimbursement = data.find(
+          (s: any) => s.key === "reimbursement_image_url"
+        );
+        if (income && income.value) setIncomeImageUrl(income.value);
+        if (settlement && settlement.value)
+          setSettlementImageUrl(settlement.value);
+        if (reimbursement && reimbursement.value)
+          setReimbursementImageUrl(reimbursement.value);
+      }
+    };
+    fetchTransactionTypeImages();
+  }, []);
 
   const handlePersonFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target;
@@ -447,14 +485,15 @@ const DashboardPage: React.FC = () => {
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center"
+              className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center
+                md:p-5 md:w-16 md:h-16 md:text-xl"
               style={{ transform: "translateY(-50%)" }}
               aria-label="Open Filters"
             >
               <span className="relative">
                 <FilterIcon
                   className={cn(
-                    "w-6 h-6 transition-colors",
+                    "w-6 h-6 md:w-8 md:h-8 transition-colors",
                     filtersActive ? "text-primary" : "text-muted-foreground"
                   )}
                 />
@@ -746,6 +785,9 @@ const DashboardPage: React.FC = () => {
           transactions={finalFilteredTransactionsForDisplay}
           deleteTransaction={deleteTransaction}
           showValues={showValues}
+          incomeImageUrl={incomeImageUrl}
+          settlementImageUrl={settlementImageUrl}
+          reimbursementImageUrl={reimbursementImageUrl}
         />
       </div>
       <DuckFabNav />
