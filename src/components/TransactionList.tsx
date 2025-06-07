@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "./transactions/DataTable";
 import { getColumns, Transaction } from "./transactions/columns";
+import { formatMoney } from "@/lib/utils";
 // import { Transaction } from "../App";
 
 interface TransactionListProps {
@@ -219,7 +220,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         }`}
                       >
                         {showValues
-                          ? `${isPositive ? "+" : "-"}$${t.amount.toFixed(2)}`
+                          ? `${isPositive ? "+" : "-"}${formatMoney(t.amount)}`
                           : "•••••"}
                       </span>
                     </div>
