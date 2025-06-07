@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Home, Plus, Settings as SettingsIcon } from "lucide-react";
+import { Home, Plus, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/supabaseClient";
 
 const NAV_LINKS = [
   {
@@ -24,10 +25,26 @@ const NAV_LINKS = [
 const DuckFabNav: React.FC = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setLoggedIn(!!session);
+    };
+    checkSession();
+  }, []);
 
   const handleNav = (to: string) => {
     setOpen(false);
     navigate(to);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -62,20 +79,32 @@ const DuckFabNav: React.FC = () => {
             </button>
           ))}
         </div>
-        {/* Duck FAB */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className={`w-16 h-16 rounded-full bg-yellow-300 shadow-2xl flex items-center justify-center text-4xl border-4 border-white transition-transform active:scale-95 ${
-            open ? "rotate-12" : ""
-          }`}
-          aria-label="Open navigation menu"
-          style={{
-            fontFamily:
-              "Apple Color Emoji,Segoe UI Emoji,NotoColorEmoji,Android Emoji,EmojiSymbols,sans-serif",
-          }}
-        >
-          🦆
-        </button>
+        {/* FAB and Logout Row */}
+        <div className="flex flex-row items-center gap-4">
+          {loggedIn && open && (
+            <Button
+              onClick={handleLogout}
+              className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-white"
+              aria-label="Logout"
+            >
+              <LogOut className="w-6 h-6 text-green-500" />
+            </Button>
+          )}
+          {/* Duck FAB */}
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className={`w-16 h-16 rounded-full bg-yellow-300 shadow-2xl flex items-center justify-center text-4xl border-4 border-white transition-transform active:scale-95 ${
+              open ? "rotate-12" : ""
+            }`}
+            aria-label="Open navigation menu"
+            style={{
+              fontFamily:
+                "Apple Color Emoji,Segoe UI Emoji,NotoColorEmoji,Android Emoji,EmojiSymbols,sans-serif",
+            }}
+          >
+            🦆
+          </button>
+        </div>
       </div>
     </>
   );

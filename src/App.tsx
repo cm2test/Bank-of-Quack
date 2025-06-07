@@ -1,6 +1,12 @@
 // src/App.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Outlet, Link, useLocation, Location } from "react-router-dom";
+import {
+  Outlet,
+  Link,
+  useLocation,
+  Location,
+  useNavigate,
+} from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "./supabaseClient";
 import { Menu } from "lucide-react";
@@ -37,6 +43,8 @@ const App: React.FC = () => {
     setSectorCategoryEmptyStateImageUrl,
   ] = useState<string | null>(null);
   const handleSetEditingTransaction = (t: any) => setEditingTransaction(t);
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
 
   const addCategory = useCallback(async (name: string) => {
     if (!name) return;
@@ -303,7 +311,28 @@ const App: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login", { replace: true });
+      }
+      setAuthChecked(true);
+    };
+    checkAuth();
+  }, [navigate]);
+
   const location = useLocation();
+
+  if (!authChecked) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        Checking authentication...
+      </div>
+    );
+  }
 
   if (loading)
     return (
