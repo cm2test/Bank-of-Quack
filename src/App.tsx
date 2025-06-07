@@ -347,33 +347,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <nav
-        className="hidden md:flex items-center justify-between py-6 border-b z-10 relative px-8"
-        style={{
-          background: "#004D40",
-        }}
-      >
-        <span className="text-3xl font-extrabold text-white select-none">
-          Bank of Quack
-        </span>
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Button
-              key={link.to}
-              asChild
-              variant={location.pathname === link.to ? "secondary" : "ghost"}
-              className={`text-lg font-semibold ${
-                location.pathname === link.to
-                  ? "bg-white text-[#004D40]"
-                  : "text-white hover:bg-white/10"
-              } transition-colors`}
-              style={{ cursor: "pointer" }}
-            >
-              <Link to={link.to}>{link.label}</Link>
-            </Button>
-          ))}
-        </div>
-      </nav>
+      {/* Removed desktop nav bar for desktop (md and up) */}
       {/* Hero section with BankerQuack image */}
       <div
         className="w-full flex items-center justify-center bg-[#004D40] relative"

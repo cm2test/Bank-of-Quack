@@ -52,12 +52,12 @@ const DuckFabNav: React.FC = () => {
       {/* Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 sm:hidden"
+          className="fixed inset-0 z-40 bg-black/20"
           onClick={() => setOpen(false)}
         />
       )}
       {/* FAB and Actions */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 sm:hidden">
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
         {/* Action Buttons */}
         <div
           className={`flex flex-col items-end gap-4 transition-all duration-300 ${
@@ -93,7 +93,7 @@ const DuckFabNav: React.FC = () => {
           {/* Duck FAB */}
           <button
             onClick={() => setOpen((v) => !v)}
-            className={`w-16 h-16 rounded-full bg-yellow-300 shadow-2xl flex items-center justify-center text-4xl border-4 border-white transition-transform active:scale-95 ${
+            className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-yellow-300 shadow-2xl flex items-center justify-center text-4xl md:text-5xl border-4 border-white transition-transform active:scale-95 ${
               open ? "rotate-12" : ""
             }`}
             aria-label="Open navigation menu"
