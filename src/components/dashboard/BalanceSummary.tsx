@@ -84,7 +84,7 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
   let content;
   if (!userNames || userNames.length < 2) {
     content = <span>Please set user names in Settings.</span>;
-  } else if (balanceSummary === 0) {
+  } else if (Math.abs(balanceSummary) < 0.01) {
     content = (
       <div className="flex items-center justify-center gap-4 flex-wrap">
         {renderUser(user1AvatarUrl, user1)}
