@@ -46,6 +46,7 @@ interface SettingsPageContext {
   setCategories?: any;
   updateCategory?: any;
   updateSector?: any;
+  transactions: any[];
 }
 
 const SettingsPage: React.FC = () => {
@@ -63,11 +64,13 @@ const SettingsPage: React.FC = () => {
     setCategories,
     updateCategory,
     updateSector,
+    transactions,
   } = useOutletContext<
     SettingsPageContext & {
       setCategories?: any;
       updateCategory?: any;
       updateSector?: any;
+      transactions: any[];
     }
   >();
 
@@ -472,6 +475,47 @@ const SettingsPage: React.FC = () => {
       uploadTransactionTypeImage(file, type);
     }
   };
+
+  // Helper to convert array of objects to CSV string
+  function arrayToCSV(data: any[]) {
+    if (!data || !data.length) return "";
+    const replacer = (key: string, value: any) =>
+      value === null || value === undefined ? "" : value;
+    const header = Object.keys(data[0]);
+    const csv = [
+      header.join(","),
+      ...data.map((row) =>
+        header
+          .map((fieldName) =>
+            JSON.stringify(replacer(fieldName, row[fieldName])).replace(
+              /\"/g,
+              '"'
+            )
+          )
+          .join(",")
+      ),
+    ].join("\r\n");
+    return csv;
+  }
+
+  function handleExportCSV() {
+    if (!transactions || !transactions.length) {
+      alert("No transactions to export.");
+      return;
+    }
+    const csv = arrayToCSV(transactions);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transactions_export_${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
 
   return (
     <>
@@ -1467,6 +1511,24 @@ const SettingsPage: React.FC = () => {
                 ))}
               </ul>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Export Transactions Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Export Transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 items-start">
+              <p className="text-muted-foreground text-sm">
+                Download all your transactions as a CSV file for use in
+                spreadsheets or backups.
+              </p>
+              <Button onClick={handleExportCSV} variant="default">
+                Export as CSV
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
