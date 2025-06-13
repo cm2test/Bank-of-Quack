@@ -91,7 +91,10 @@ const DashboardPage: React.FC = () => {
   const [allTransactionsState, setAllTransactionsState] =
     useState(transactions);
   const [descriptionFilter, setDescriptionFilter] = useState("");
-  const [showValues, setShowValues] = useState(true);
+  const [showValues, setShowValues] = useState(() => {
+    const stored = localStorage.getItem("dashboard_show_values");
+    return stored === null ? true : stored === "true";
+  });
 
   // Add state for transaction type images
   const [incomeImageUrl, setIncomeImageUrl] = useState<string | null>(null);
@@ -134,6 +137,10 @@ const DashboardPage: React.FC = () => {
     };
     fetchTransactionTypeImages();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_show_values", showValues.toString());
+  }, [showValues]);
 
   const handlePersonFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target;
