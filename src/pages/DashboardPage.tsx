@@ -67,8 +67,12 @@ const DashboardPage: React.FC = () => {
     categories,
     sectors,
     sectorCategoryEmptyStateImageUrl,
+    fetchTransactions: fetchTransactionsFromContext,
   } = useOutletContext<
-    DashboardPageContext & { sectorCategoryEmptyStateImageUrl?: string }
+    DashboardPageContext & {
+      sectorCategoryEmptyStateImageUrl?: string;
+      fetchTransactions?: () => Promise<void>;
+    }
   >();
 
   const [startDate, setStartDate] = useState<string>(
@@ -104,6 +108,35 @@ const DashboardPage: React.FC = () => {
   const [reimbursementImageUrl, setReimbursementImageUrl] = useState<
     string | null
   >(null);
+
+  const fetchTransactions = async () => {
+    try {
+      if (fetchTransactionsFromContext) {
+        await fetchTransactionsFromContext();
+      } else {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("*, category:categories(name)")
+          .order("date", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        const formattedData = data.map((t: any) => ({
+          ...t,
+          category_name: t.category ? t.category.name : "Uncategorized",
+        }));
+        setAllTransactionsState(formattedData);
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   useEffect(() => {
     setAllTransactionsState(transactions);

@@ -69,9 +69,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     navigate("/transactions");
   };
   const onDelete = (transactionId: string) => {
-    if (window.confirm("Are you sure you want to delete this transaction?")) {
-      deleteTransaction(transactionId);
-    }
+    deleteTransaction(transactionId);
   };
 
   if (!transactions || transactions.length === 0) {
