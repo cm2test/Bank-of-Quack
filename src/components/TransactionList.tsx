@@ -16,6 +16,7 @@ interface TransactionListProps {
   incomeImageUrl?: string | null;
   settlementImageUrl?: string | null;
   reimbursementImageUrl?: string | null;
+  variant?: "default" | "dialog";
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -26,6 +27,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   incomeImageUrl,
   settlementImageUrl,
   reimbursementImageUrl,
+  variant = "default",
 }) => {
   const {
     userNames,
@@ -80,11 +82,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
+  const isDialog = variant === "dialog";
+
   return (
     <div className={className}>
       {/* Header with Expand/Collapse All button */}
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-2xl font-bold">Transactions</h2>
+        <h2
+          className={`text-2xl font-bold ${
+            isDialog ? "text-white" : "text-primary"
+          }`}
+        >
+          Transactions
+        </h2>
         <Button
           size="sm"
           variant="ghost"
@@ -97,7 +107,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               setAllExpanded(true);
             }
           }}
-          className="ml-2"
+          className={`ml-2 ${isDialog ? "text-white hover:bg-white/10" : ""}`}
         >
           {allExpanded ? "Collapse All" : "Expand All"}
         </Button>
@@ -105,7 +115,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
       {/* Flat list for mobile and desktop */}
       <div className="space-y-2">
         {sortedTransactions.length === 0 ? (
-          <p>No transactions found for the selected period.</p>
+          <p className={isDialog ? "text-gray-300" : ""}>
+            No transactions found for the selected period.
+          </p>
         ) : (
           sortedTransactions.map((t) => {
             const type = t.transaction_type || "expense";
@@ -132,7 +144,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <div key={t.id}>
                 <div
-                  className={`bg-background/80 rounded-xl transition-colors cursor-pointer border border-border ${
+                  className={`bg-background/80 rounded-xl transition-colors cursor-pointer border ${
+                    isDialog
+                      ? "border-gray-700 hover:bg-white/5"
+                      : "border-border"
+                  } ${
                     isExpanded ? "ring-2 ring-primary/30" : ""
                   } flex flex-col overflow-hidden animate-fade-in user-select-none focus:outline-none`}
                   onClick={() => {
@@ -205,10 +221,18 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-base font-semibold text-primary truncate">
+                      <div
+                        className={`text-base font-semibold truncate ${
+                          isDialog ? "text-white" : "text-primary"
+                        }`}
+                      >
                         {t.description}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          isDialog ? "text-gray-400" : "text-muted-foreground"
+                        }`}
+                      >
                         {dateLabel}
                       </div>
                     </div>
@@ -229,7 +253,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   {isExpanded && (
                     <div className="flex flex-col sm:flex-row gap-4 px-6 pb-4 pt-2 animate-fade-in">
                       {/* Details left */}
-                      <div className="flex-1 text-sm text-muted-foreground space-y-1">
+                      <div
+                        className={`flex-1 text-sm space-y-1 ${
+                          isDialog ? "text-gray-300" : "text-muted-foreground"
+                        }`}
+                      >
                         <div>
                           Type: {type.charAt(0).toUpperCase() + type.slice(1)}
                         </div>
@@ -273,26 +301,24 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         )}
                       </div>
                       {/* Buttons right */}
-                      <div className="flex flex-row sm:flex-col gap-2 sm:items-end items-center justify-end">
+                      <div className="flex flex-col sm:flex-row gap-2 items-center">
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(t);
-                          }}
-                          className="rounded-lg px-4 py-2 font-semibold shadow-sm"
+                          size="sm"
+                          onClick={() => onEdit(t)}
+                          className={
+                            isDialog
+                              ? "bg-transparent text-white border-gray-500 hover:bg-white/10 w-full sm:w-auto"
+                              : "w-full sm:w-auto"
+                          }
                         >
                           Edit
                         </Button>
                         <Button
-                          size="sm"
                           variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTransaction(t.id);
-                          }}
-                          className="rounded-lg px-4 py-2 font-semibold shadow-sm"
+                          size="sm"
+                          onClick={() => onDelete(t.id)}
+                          className="w-full sm:w-auto"
                         >
                           Delete
                         </Button>

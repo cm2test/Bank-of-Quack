@@ -176,6 +176,16 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const deleteTransaction = useCallback(async (id: string) => {
+    if (!id) return;
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const updateCategory = useCallback(async (id: string, name: string) => {
     if (!id || !name) return;
     const { data, error } = await supabase
@@ -392,26 +402,36 @@ const App: React.FC = () => {
         <div className="relative z-10 w-full flex flex-col items-center">
           <Outlet
             context={{
+              // Transactions
               transactions,
+              setTransactions,
+              addTransaction,
+              updateTransaction,
+              deleteTransaction,
+              editingTransaction,
+              handleSetEditingTransaction,
+
+              // Users
               userNames,
+              updateUserNames,
+              user1AvatarUrl,
+              user2AvatarUrl,
+
+              // Categories
               categories,
-              setCategories,
-              sectors,
               addCategory,
               deleteCategory,
+              updateCategory,
+
+              // Sectors
+              sectors,
               addSector,
               deleteSector,
               addCategoryToSector,
               removeCategoryFromSector,
-              updateUserNames,
-              handleSetEditingTransaction,
-              editingTransaction,
-              addTransaction,
-              updateTransaction,
-              user1AvatarUrl,
-              user2AvatarUrl,
-              updateCategory,
               updateSector,
+
+              // Misc
               sectorCategoryEmptyStateImageUrl,
             }}
           />
