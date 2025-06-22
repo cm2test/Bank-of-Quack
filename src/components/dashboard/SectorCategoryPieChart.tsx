@@ -74,36 +74,32 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
 }) => {
   const sectorTotals = useMemo(() => {
     const map: Record<string, number> = {};
-    // First, add up all the expenses
-    transactions
-      .filter((t) => t.transaction_type === "expense")
-      .forEach((t) => {
-        const cat = categories.find((c) => c.id === t.category_id);
-        if (!cat) return;
-        const sector = sectors.find((s) => s.category_ids.includes(cat.id));
-        if (!sector) return;
-        map[sector.id] = (map[sector.id] || 0) + (t.amount || 0);
-      });
+    const expenseTransactions = transactions.filter(
+      (t) => t.transaction_type === "expense"
+    );
 
-    // Then, subtract the reimbursements
-    transactions
-      .filter(
+    expenseTransactions.forEach((expense) => {
+      const cat = categories.find((c) => c.id === expense.category_id);
+      if (!cat) return;
+      const sector = sectors.find((s) => s.category_ids.includes(cat.id));
+      if (!sector) return;
+
+      const reimbursements = allTransactions.filter(
         (t) =>
-          t.transaction_type === "reimbursement" && t.reimburses_transaction_id
-      )
-      .forEach((r) => {
-        const originalExpense = allTransactions.find(
-          (t) => t.id === r.reimburses_transaction_id
-        );
-        if (!originalExpense || !originalExpense.category_id) return;
-        const cat = categories.find(
-          (c) => c.id === originalExpense.category_id
-        );
-        if (!cat) return;
-        const sector = sectors.find((s) => s.category_ids.includes(cat.id));
-        if (!sector) return;
-        map[sector.id] = (map[sector.id] || 0) - (r.amount || 0);
-      });
+          t.transaction_type === "reimbursement" &&
+          t.reimburses_transaction_id === expense.id
+      );
+      const reimbursementTotal = reimbursements.reduce(
+        (sum, r) => sum + r.amount,
+        0
+      );
+
+      const netExpense = expense.amount - reimbursementTotal;
+
+      if (netExpense > 0) {
+        map[sector.id] = (map[sector.id] || 0) + netExpense;
+      }
+    });
 
     return sectors
       .map((s, i) => ({
@@ -119,38 +115,30 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     const sector = sectors.find((s) => s.id === sectorId);
     if (!sector) return [];
     const map: Record<string, number> = {};
-    // Add expenses
-    transactions
-      .filter(
-        (t) =>
-          t.transaction_type === "expense" &&
-          t.category_id &&
-          sector.category_ids.includes(t.category_id)
-      )
-      .forEach((t) => {
-        map[t.category_id!] = (map[t.category_id!] || 0) + (t.amount || 0);
-      });
 
-    // Subtract reimbursements
-    transactions
-      .filter(
-        (t) =>
-          t.transaction_type === "reimbursement" && t.reimburses_transaction_id
-      )
-      .forEach((r) => {
-        const originalExpense = allTransactions.find(
-          (t) => t.id === r.reimburses_transaction_id
-        );
-        if (
-          !originalExpense ||
-          !originalExpense.category_id ||
-          !sector.category_ids.includes(originalExpense.category_id)
-        )
-          return;
+    const expenseTransactions = transactions.filter(
+      (t) =>
+        t.transaction_type === "expense" &&
+        t.category_id &&
+        sector.category_ids.includes(t.category_id)
+    );
 
-        map[originalExpense.category_id] =
-          (map[originalExpense.category_id] || 0) - (r.amount || 0);
-      });
+    expenseTransactions.forEach((expense) => {
+      const reimbursements = allTransactions.filter(
+        (t) =>
+          t.transaction_type === "reimbursement" &&
+          t.reimburses_transaction_id === expense.id
+      );
+      const reimbursementTotal = reimbursements.reduce(
+        (sum, r) => sum + r.amount,
+        0
+      );
+      const netExpense = expense.amount - reimbursementTotal;
+
+      if (netExpense > 0 && expense.category_id) {
+        map[expense.category_id] = (map[expense.category_id] || 0) + netExpense;
+      }
+    });
 
     return (
       sector.category_ids
@@ -315,7 +303,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     }
 
     const relevantExpenseIds = relevantExpenses.map((t) => t.id);
-    const relevantReimbursements = transactions.filter(
+    const relevantReimbursements = allTransactions.filter(
       (t) =>
         t.transaction_type === "reimbursement" &&
         t.reimburses_transaction_id &&

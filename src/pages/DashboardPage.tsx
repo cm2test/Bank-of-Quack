@@ -162,6 +162,7 @@ const DashboardPage: React.FC = () => {
           />
           <ExpensesIncomeNetWidget
             transactions={filteredTransactions}
+            allTransactions={transactions}
             userNames={userNames}
             showValues={showValues}
             personInvolvementFilter={personInvolvementFilter}

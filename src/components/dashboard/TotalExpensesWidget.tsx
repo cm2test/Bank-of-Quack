@@ -7,6 +7,7 @@ import { TrendingDown, Wallet, PiggyBank } from "lucide-react";
 
 interface ExpensesIncomeNetWidgetProps {
   transactions: Transaction[];
+  allTransactions?: Transaction[];
   userNames: string[];
   showValues?: boolean;
   personInvolvementFilter: { user1: boolean; user2: boolean; shared: boolean };
@@ -14,18 +15,26 @@ interface ExpensesIncomeNetWidgetProps {
 
 const ExpensesIncomeNetWidget: React.FC<ExpensesIncomeNetWidgetProps> = ({
   transactions,
+  allTransactions,
   userNames,
   showValues = true,
   personInvolvementFilter,
 }) => {
   const { totalNetExpenses, totalIncome } = useMemo(() => {
+    const sourceTransactions = allTransactions || transactions;
     const expenseTransactions = transactions.filter(
       (t) => t.transaction_type === "expense"
     );
-    const reimbursementTransactions = transactions.filter(
-      (t) =>
-        t.transaction_type === "reimbursement" && t.reimburses_transaction_id
-    );
+
+    const findReimbursementsForExpense = (expenseId: string) => {
+      return sourceTransactions
+        .filter(
+          (t) =>
+            t.transaction_type === "reimbursement" &&
+            t.reimburses_transaction_id === expenseId
+        )
+        .reduce((sum, r) => sum + r.amount, 0);
+    };
 
     let expenses = 0;
 
@@ -40,34 +49,31 @@ const ExpensesIncomeNetWidget: React.FC<ExpensesIncomeNetWidgetProps> = ({
 
     if (onlyUser1Selected) {
       expenses = expenseTransactions.reduce((sum, t) => {
-        if (t.split_type === "user1_only") return sum + t.amount;
-        if (t.split_type === "splitEqually") return sum + t.amount / 2;
-        return sum;
+        const reimbursedAmount = findReimbursementsForExpense(t.id);
+        let userExpense = 0;
+        if (t.split_type === "user1_only") {
+          userExpense = t.amount;
+        } else if (t.split_type === "splitEqually") {
+          userExpense = t.amount / 2;
+        }
+        return sum + Math.max(0, userExpense - reimbursedAmount);
       }, 0);
-      const user1Reimbursements = reimbursementTransactions
-        .filter((r) => r.paid_by_user_name === userNames[0])
-        .reduce((sum, r) => sum + r.amount, 0);
-      expenses -= user1Reimbursements;
     } else if (onlyUser2Selected) {
       expenses = expenseTransactions.reduce((sum, t) => {
-        if (t.split_type === "user2_only") return sum + t.amount;
-        if (t.split_type === "splitEqually") return sum + t.amount / 2;
-        return sum;
+        const reimbursedAmount = findReimbursementsForExpense(t.id);
+        let userExpense = 0;
+        if (t.split_type === "user2_only") {
+          userExpense = t.amount;
+        } else if (t.split_type === "splitEqually") {
+          userExpense = t.amount / 2;
+        }
+        return sum + Math.max(0, userExpense - reimbursedAmount);
       }, 0);
-      const user2Reimbursements = reimbursementTransactions
-        .filter((r) => r.paid_by_user_name === userNames[1])
-        .reduce((sum, r) => sum + r.amount, 0);
-      expenses -= user2Reimbursements;
     } else {
-      const totalExpenseAmount = expenseTransactions.reduce(
-        (sum, t) => sum + t.amount,
-        0
-      );
-      const totalReimbursementAmount = reimbursementTransactions.reduce(
-        (sum, r) => sum + r.amount,
-        0
-      );
-      expenses = totalExpenseAmount - totalReimbursementAmount;
+      expenses = expenseTransactions.reduce((sum, t) => {
+        const reimbursedAmount = findReimbursementsForExpense(t.id);
+        return sum + Math.max(0, t.amount - reimbursedAmount);
+      }, 0);
     }
 
     const income = transactions
@@ -80,7 +86,7 @@ const ExpensesIncomeNetWidget: React.FC<ExpensesIncomeNetWidgetProps> = ({
       .reduce((sum, t) => sum + t.amount, 0);
 
     return { totalNetExpenses: expenses, totalIncome: income };
-  }, [transactions, personInvolvementFilter, userNames]);
+  }, [transactions, allTransactions, personInvolvementFilter, userNames]);
 
   const netSaved = totalIncome - totalNetExpenses;
 
