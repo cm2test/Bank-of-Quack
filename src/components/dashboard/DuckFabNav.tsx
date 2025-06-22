@@ -22,8 +22,12 @@ const NAV_LINKS = [
   },
 ];
 
-const DuckFabNav: React.FC = () => {
-  const [open, setOpen] = useState(false);
+interface DuckFabNavProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}
+
+const DuckFabNav: React.FC<DuckFabNavProps> = ({ open, setOpen }) => {
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -38,6 +42,7 @@ const DuckFabNav: React.FC = () => {
   }, []);
 
   const handleNav = (to: string) => {
+    window.scrollTo(0, 0);
     setOpen(false);
     navigate(to);
   };
@@ -92,7 +97,7 @@ const DuckFabNav: React.FC = () => {
           )}
           {/* Duck FAB */}
           <button
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setOpen(!open)}
             className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-yellow-300 shadow-2xl flex items-center justify-center text-4xl md:text-5xl border-4 border-white transition-transform active:scale-95 ${
               open ? "rotate-12" : ""
             }`}

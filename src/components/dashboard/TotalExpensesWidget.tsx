@@ -1,135 +1,89 @@
 // src/components/dashboard/TotalExpensesWidget.tsx
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useOutletContext } from "react-router-dom";
 import { formatMoney } from "@/lib/utils";
-import {
-  ArrowUpRight,
-  ArrowDownRight,
-  PiggyBank,
-  TrendingDown,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+import { Transaction } from "@/types";
+import { TrendingDown, Wallet, PiggyBank } from "lucide-react";
 
 interface ExpensesIncomeNetWidgetProps {
-  transactionsInDateRange: any[];
-  context?: any;
+  transactions: Transaction[];
+  userNames: string[];
   showValues?: boolean;
-}
-
-function getPreviousMonthRange() {
-  const now = new Date();
-  const firstDayPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastDayPrevMonth = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    0,
-    23,
-    59,
-    59,
-    999
-  );
-  return [firstDayPrevMonth, lastDayPrevMonth];
+  personInvolvementFilter: { user1: boolean; user2: boolean; shared: boolean };
 }
 
 const ExpensesIncomeNetWidget: React.FC<ExpensesIncomeNetWidgetProps> = ({
-  transactionsInDateRange,
-  context: propContext,
+  transactions,
+  userNames,
   showValues = true,
+  personInvolvementFilter,
 }) => {
-  // Use propContext if provided, otherwise fallback to useOutletContext
-  const context = propContext || useOutletContext<any>();
-  const userNames = context?.userNames || [];
-  const personInvolvementFilter = context?.personInvolvementFilter || {
-    user1: true,
-    user2: true,
-  };
-  const allTransactions = context?.allTransactions || [];
+  const { totalNetExpenses, totalIncome } = useMemo(() => {
+    const expenseTransactions = transactions.filter(
+      (t) => t.transaction_type === "expense"
+    );
+    const reimbursementTransactions = transactions.filter(
+      (t) =>
+        t.transaction_type === "reimbursement" && t.reimburses_transaction_id
+    );
 
-  // Calculate total expenses (match logic in expensesForWidgets)
-  const totalNetExpenses = useMemo(() => {
-    if (!transactionsInDateRange || !userNames || userNames.length < 2)
-      return 0;
-    const onlyUser1 =
-      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
-    const onlyUser2 =
-      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
-    const bothUsers =
-      personInvolvementFilter.user1 && personInvolvementFilter.user2;
-    const shared = personInvolvementFilter.shared;
-    return transactionsInDateRange
-      .filter((t) => t.transaction_type === "expense")
-      .map((expense) => {
-        if (
-          expense.split_type === "user1_only" &&
-          personInvolvementFilter.user1
-        ) {
-          return expense.amount || 0;
-        }
-        if (
-          expense.split_type === "user2_only" &&
-          personInvolvementFilter.user2
-        ) {
-          return expense.amount || 0;
-        }
-        if (expense.split_type === "splitEqually" && shared) {
-          if (onlyUser1 || onlyUser2) {
-            return (expense.amount || 0) / 2;
-          }
-          // both users or only shared checked
-          return expense.amount || 0;
-        }
-        return 0;
-      })
-      .reduce((sum, amt) => sum + amt, 0);
-  }, [transactionsInDateRange, personInvolvementFilter, userNames]);
+    let expenses = 0;
 
-  // Calculate total income
-  const totalIncome = useMemo(() => {
-    if (!transactionsInDateRange || userNames.length < 2) {
-      return transactionsInDateRange
-        ? transactionsInDateRange
-            .filter((t) => t.transaction_type === "income")
-            .reduce((sum, t) => sum + (t.amount || 0), 0)
-        : 0;
-    }
-    const onlyUser1 =
-      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
-    const onlyUser2 =
-      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
-    const bothOrNeither =
-      (personInvolvementFilter.user1 && personInvolvementFilter.user2) ||
-      (!personInvolvementFilter.user1 && !personInvolvementFilter.user2);
-    return transactionsInDateRange
-      .filter((t) => t.transaction_type === "income")
-      .reduce((sum, t) => {
-        if (t.paid_by_user_name === "Shared") {
-          if (bothOrNeither) {
-            return sum + (t.amount || 0);
-          } else {
-            return sum + (t.amount || 0) / 2;
-          }
-        }
-        if (onlyUser1) {
-          if (t.paid_by_user_name === userNames[0])
-            return sum + (t.amount || 0);
-          return sum;
-        } else if (onlyUser2) {
-          if (t.paid_by_user_name === userNames[1])
-            return sum + (t.amount || 0);
-          return sum;
-        } else if (bothOrNeither) {
-          return sum + (t.amount || 0);
-        }
+    const onlyUser1Selected =
+      personInvolvementFilter.user1 &&
+      !personInvolvementFilter.user2 &&
+      personInvolvementFilter.shared;
+    const onlyUser2Selected =
+      !personInvolvementFilter.user1 &&
+      personInvolvementFilter.user2 &&
+      personInvolvementFilter.shared;
+
+    if (onlyUser1Selected) {
+      expenses = expenseTransactions.reduce((sum, t) => {
+        if (t.split_type === "user1_only") return sum + t.amount;
+        if (t.split_type === "splitEqually") return sum + t.amount / 2;
         return sum;
       }, 0);
-  }, [transactionsInDateRange, userNames, personInvolvementFilter]);
+      const user1Reimbursements = reimbursementTransactions
+        .filter((r) => r.paid_by_user_name === userNames[0])
+        .reduce((sum, r) => sum + r.amount, 0);
+      expenses -= user1Reimbursements;
+    } else if (onlyUser2Selected) {
+      expenses = expenseTransactions.reduce((sum, t) => {
+        if (t.split_type === "user2_only") return sum + t.amount;
+        if (t.split_type === "splitEqually") return sum + t.amount / 2;
+        return sum;
+      }, 0);
+      const user2Reimbursements = reimbursementTransactions
+        .filter((r) => r.paid_by_user_name === userNames[1])
+        .reduce((sum, r) => sum + r.amount, 0);
+      expenses -= user2Reimbursements;
+    } else {
+      const totalExpenseAmount = expenseTransactions.reduce(
+        (sum, t) => sum + t.amount,
+        0
+      );
+      const totalReimbursementAmount = reimbursementTransactions.reduce(
+        (sum, r) => sum + r.amount,
+        0
+      );
+      expenses = totalExpenseAmount - totalReimbursementAmount;
+    }
 
-  // Net saved = income - expenses
+    const income = transactions
+      .filter(
+        (t) =>
+          t.transaction_type === "income" ||
+          (t.transaction_type === "reimbursement" &&
+            !t.reimburses_transaction_id)
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return { totalNetExpenses: expenses, totalIncome: income };
+  }, [transactions, personInvolvementFilter, userNames]);
+
   const netSaved = totalIncome - totalNetExpenses;
 
-  // --- UI ---
   return (
     <Card className="mb-4">
       <CardHeader>

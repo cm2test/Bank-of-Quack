@@ -1,13 +1,10 @@
-// src/components/TransactionForm.jsx
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  ChangeEvent,
-  FormEvent,
-} from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+// src/components/TransactionForm.tsx
+import React, { useState, useEffect, useMemo, useRef, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,61 +18,53 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Transaction, Category } from "@/types";
+import { formatMoney } from "@/lib/utils";
 
 interface TransactionFormProps {
-  onAddTransaction: (t: Partial<any>) => void;
-  context?: any;
-}
-
-interface TransactionFormContext {
   userNames: string[];
-  categories: any[];
-  transactions: any[];
-  editingTransaction: any | null;
-  updateTransaction: (t: Partial<any>) => void;
-  handleSetEditingTransaction: (t: any | null) => void;
+  categories: Category[];
+  transactions: Transaction[];
+  editingTransaction: Transaction | null;
+  addTransaction: (t: Partial<Transaction>) => void;
+  updateTransaction: (t: Partial<Transaction>) => void;
+  handleSetEditingTransaction: (t: Transaction | null) => void;
 }
 
 const TRANSACTION_TYPES = [
   { value: "expense", label: "Expense" },
-  { value: "settlement", label: "Settlement" },
   { value: "income", label: "Income" },
+  { value: "settlement", label: "Settlement" },
   { value: "reimbursement", label: "Reimbursement" },
 ];
 
-// Helper to get local date string in YYYY-MM-DD
-function getLocalDateString() {
-  const todayLocal = new Date();
-  return (
-    todayLocal.getFullYear() +
-    "-" +
-    String(todayLocal.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(todayLocal.getDate()).padStart(2, "0")
-  );
+function getLocalDateString(date: Date = new Date()) {
+  return format(date, "yyyy-MM-dd");
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({
-  onAddTransaction,
-  context: propContext,
+  userNames,
+  categories,
+  transactions,
+  editingTransaction,
+  addTransaction,
+  updateTransaction,
+  handleSetEditingTransaction,
 }) => {
-  const context = propContext || useOutletContext<TransactionFormContext>();
-  const {
-    userNames,
-    categories,
-    transactions,
-    editingTransaction,
-    updateTransaction,
-    handleSetEditingTransaction,
-  } = context;
-
   const navigate = useNavigate();
 
   const [id, setId] = useState<string | null>(null);
   const [transactionType, setTransactionType] = useState<string>(
     TRANSACTION_TYPES[0].value
   );
-  const [date, setDate] = useState<string>(getLocalDateString());
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -84,7 +73,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const [splitType, setSplitType] = useState<string>("");
   const [selectedReimbursesTransactionId, setSelectedReimbursesTransactionId] =
     useState<string>("none");
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const isEditing = !!editingTransaction;
   const lastEditIdRef = useRef<string | null>(null);
@@ -105,11 +93,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const availableExpensesForReimbursement = useMemo(() => {
     if (!transactions) return [];
     return transactions
-      .filter((t: any) => t.transaction_type === "expense")
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      .filter((t) => t.transaction_type === "expense")
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions]);
 
   useEffect(() => {
@@ -123,16 +108,19 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     ) {
       timeoutId = setTimeout(() => {
         lastEditIdRef.current = editingTransaction.id;
-        console.log("Editing transaction (delayed):", editingTransaction); // Debugging
         const currentType = editingTransaction.transaction_type || "expense";
         setTransactionType(currentType);
         setId(editingTransaction.id);
-        setDate(editingTransaction.date);
+
+        const localDate = new Date(editingTransaction.date);
+        const userTimezoneOffset = localDate.getTimezoneOffset() * 60000;
+        setDate(new Date(localDate.getTime() + userTimezoneOffset));
+
         setDescription(editingTransaction.description);
         setAmount(editingTransaction.amount.toString());
         setPaidOrReceivedBy(
-          userNames.includes(editingTransaction.paid_by_user_name)
-            ? editingTransaction.paid_by_user_name
+          userNames.includes(editingTransaction.paid_by_user_name!)
+            ? editingTransaction.paid_by_user_name!
             : userNames[0]
         );
         setSelectedReimbursesTransactionId(
@@ -140,10 +128,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         );
         if (currentType === "settlement") {
           setPaidToUserName(
-            userNames.includes(editingTransaction.paid_to_user_name)
-              ? editingTransaction.paid_to_user_name
+            userNames.includes(editingTransaction.paid_to_user_name!)
+              ? editingTransaction.paid_to_user_name!
               : userNames.find(
-                  (u: any) => u !== editingTransaction.paid_by_user_name
+                  (u) => u !== editingTransaction.paid_by_user_name
                 ) || ""
           );
           setSelectedCategoryId("");
@@ -152,7 +140,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           let categoryToEdit = null;
           if (editingTransaction.category_id) {
             categoryToEdit = categories.find(
-              (c: any) => c.id === editingTransaction.category_id
+              (c) => c.id === editingTransaction.category_id
             );
           }
           setSelectedCategoryId(
@@ -160,11 +148,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           );
           setSplitType(
             editingTransaction.split_type &&
-              getExpenseSplitTypes(userNames).some(
+              EXPENSE_SPLIT_TYPES.some(
                 (s) => s.value === editingTransaction.split_type
               )
               ? editingTransaction.split_type
-              : getExpenseSplitTypes(userNames)[0]?.value || "splitEqually"
+              : EXPENSE_SPLIT_TYPES[0]?.value || "splitEqually"
           );
           setPaidToUserName("");
         } else if (
@@ -180,13 +168,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       lastEditIdRef.current = null;
       setId(null);
       setTransactionType("expense");
-      setDate(getLocalDateString());
+      setDate(new Date());
       setDescription("");
       setAmount("");
-      setPaidOrReceivedBy(userNames[0]);
+      setPaidOrReceivedBy("");
       setSelectedReimbursesTransactionId("none");
-      setSelectedCategoryId(categories[0].id);
-      setSplitType(getExpenseSplitTypes(userNames)[0]?.value || "splitEqually");
+      setSelectedCategoryId("");
+      setSplitType("");
       setPaidToUserName("");
     }
     return () => {
@@ -201,7 +189,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const resetFormAndState = () => {
     setId(null);
     setTransactionType("expense");
-    setDate(getLocalDateString());
+    setDate(new Date());
     setDescription("");
     setAmount("");
     setSelectedCategoryId("");
@@ -209,9 +197,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setPaidToUserName("");
     setSplitType("");
     setSelectedReimbursesTransactionId("none");
-    if (handleSetEditingTransaction) {
-      handleSetEditingTransaction(null);
-    }
+    handleSetEditingTransaction(null);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -234,9 +220,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
 
-    let transactionDataPayload: Partial<any> = {
+    if (!date) {
+      alert("Please select a date.");
+      return;
+    }
+
+    let transactionDataPayload: Partial<Transaction> = {
       transaction_type: transactionType,
-      date,
+      date: getLocalDateString(date),
       description,
       amount: parseFloat(amount),
       paid_by_user_name: paidOrReceivedBy,
@@ -249,305 +240,268 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           : selectedReimbursesTransactionId,
     };
 
-    // Only add id if editing
-    if (isEditing && id) {
-      transactionDataPayload.id = id;
-    }
-
     if (transactionType === "expense") {
       if (!selectedCategoryId) {
-        alert("Please select a category for the expense.");
-        return;
-      }
-      const categoryObject = categories.find(
-        (c: any) => c.id === selectedCategoryId
-      );
-      transactionDataPayload.category_id = selectedCategoryId;
-      if (!categoryObject && selectedCategoryId) {
-        alert("Invalid category selected.");
+        alert("Please select a category.");
         return;
       }
       if (!splitType) {
-        alert("Please select a split type for the expense.");
+        alert("Please select a split type.");
         return;
       }
-      transactionDataPayload.split_type = splitType;
+      transactionDataPayload = {
+        ...transactionDataPayload,
+        category_id: selectedCategoryId,
+        split_type: splitType,
+      };
     } else if (transactionType === "settlement") {
-      if (!paidToUserName) {
-        alert("Please select who is being paid for the settlement.");
-        return;
-      }
-      if (paidOrReceivedBy === paidToUserName) {
-        alert("Payer and Payee cannot be the same for a settlement.");
-        return;
-      }
-      transactionDataPayload.paid_to_user_name = paidToUserName;
-      transactionDataPayload.category_id = null;
-    } else if (transactionType === "income") {
-      transactionDataPayload.category_id = null;
-    } else if (transactionType === "reimbursement") {
-      // If reimbursing a specific transaction, copy its category_id
-      if (selectedReimbursesTransactionId !== "none") {
-        const reimbursedExpense = transactions.find(
-          (t: any) => t.id === selectedReimbursesTransactionId
-        );
-        transactionDataPayload.category_id =
-          reimbursedExpense?.category_id || null;
-      } else {
-        transactionDataPayload.category_id = null;
-      }
+      transactionDataPayload = {
+        ...transactionDataPayload,
+        paid_to_user_name: paidToUserName,
+      };
     }
 
     if (isEditing) {
-      updateTransaction(transactionDataPayload);
+      updateTransaction({ ...transactionDataPayload, id: id! });
+      navigate("/");
     } else {
-      onAddTransaction(transactionDataPayload);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      addTransaction(transactionDataPayload);
+      navigate("/");
     }
-    resetFormAndState();
   };
 
   const handleCancelEdit = () => {
     resetFormAndState();
     navigate("/");
   };
-  const availablePayees = userNames.filter(
-    (name: any) => name !== paidOrReceivedBy
-  );
-  const paidOrReceivedByLabel =
-    transactionType === "income" || transactionType === "reimbursement"
-      ? "Received By:"
-      : transactionType === "settlement"
-      ? "Payer:"
-      : "Paid By:";
 
   return (
-    <>
-      {showSuccess && (
-        <div className="sticky top-0 left-0 w-full flex justify-center z-50">
-          <div className="max-w-md w-full m-4">
-            <Alert>
-              <AlertTitle>Transaction Added!</AlertTitle>
-              <AlertDescription>
-                Your transaction was successfully added.
-                <button
-                  className="ml-4 text-xs underline"
-                  onClick={() => setShowSuccess(false)}
-                >
-                  Dismiss
-                </button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
-      )}
-      <Card className="max-w-xl mx-auto w-full">
-        <CardHeader>
-          <CardTitle>
-            {isEditing
-              ? `Edit ${editingTransaction?.transaction_type || "Transaction"}`
-              : `Add New ${
-                  transactionType.charAt(0).toUpperCase() +
-                  transactionType.slice(1)
-                }`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="transactionType">Transaction Type</Label>
-              <Select
-                value={transactionType}
-                onValueChange={setTransactionType}
-                disabled={isEditing}
+    <Card className="max-w-2xl mx-auto bg-transparent border-none shadow-none text-white">
+      <CardHeader>
+        <CardTitle className="text-3xl font-bold text-center">
+          {isEditing ? "Edit Transaction" : "New Transaction"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pb-24">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Transaction Type */}
+          <ToggleGroup
+            type="single"
+            value={transactionType}
+            onValueChange={(value: string) => {
+              if (value) setTransactionType(value);
+            }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-2"
+            disabled={isEditing}
+          >
+            {TRANSACTION_TYPES.map((type) => (
+              <ToggleGroupItem
+                key={type.value}
+                value={type.value}
+                className="capitalize data-[state=on]:bg-yellow-400 data-[state=on]:text-teal-900"
               >
-                <SelectTrigger id="transactionType" className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                  {TRANSACTION_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+                {type.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Date */}
+            <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
-              <Input
-                type="date"
-                id="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm appearance-none"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-white/10",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div>
+            {/* Description */}
+            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Input
-                type="text"
+              <Textarea
                 id="description"
+                placeholder="e.g., Groceries from Walmart"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
-                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm"
+                className="bg-white/10"
               />
             </div>
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                type="number"
-                id="amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min="0.01"
-                step="0.01"
-                required
-                inputMode="decimal"
-                pattern="[0-9]*"
-                className="w-full h-9 rounded-md px-3 py-2 bg-background text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="paidOrReceivedBy">{paidOrReceivedByLabel}</Label>
-              <Select
-                value={paidOrReceivedBy}
-                onValueChange={setPaidOrReceivedBy}
-                required
-              >
-                <SelectTrigger id="paidOrReceivedBy" className="bg-background">
-                  <SelectValue placeholder="-- Select User --" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                  {userNames.map((user: any) => (
-                    <SelectItem key={user} value={user}>
-                      {user}
-                    </SelectItem>
-                  ))}
-                  {transactionType === "expense" && (
-                    <SelectItem key="shared" value="Shared">
-                      Shared
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            {transactionType === "settlement" && (
-              <div>
-                <Label htmlFor="paidToUserName">Payee</Label>
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-2 text-center">
+            <Label htmlFor="amount" className="text-lg">
+              Amount
+            </Label>
+            <Input
+              id="amount"
+              type="number"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+              min="0"
+              step="0.01"
+              className="text-5xl font-bold text-center h-auto bg-transparent border-x-0 border-t-0 border-b-2 border-white/50 focus:ring-0 focus:border-yellow-400 transition-colors"
+            />
+          </div>
+
+          {/* Paid by / Received by */}
+          <div className="space-y-2">
+            <Label htmlFor="paid-by">
+              {transactionType === "income" ||
+              transactionType === "reimbursement"
+                ? "Received by"
+                : "Paid by"}
+            </Label>
+            <Select
+              value={paidOrReceivedBy}
+              onValueChange={setPaidOrReceivedBy}
+            >
+              <SelectTrigger id="paid-by" className="bg-white/10">
+                <SelectValue placeholder="Select user" />
+              </SelectTrigger>
+              <SelectContent>
+                {userNames.map((user) => (
+                  <SelectItem key={user} value={user}>
+                    {user}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Conditional Fields */}
+          {transactionType === "expense" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
                 <Select
-                  value={paidToUserName}
-                  onValueChange={setPaidToUserName}
-                  required
+                  value={selectedCategoryId}
+                  onValueChange={setSelectedCategoryId}
                 >
-                  <SelectTrigger id="paidToUserName" className="bg-background">
-                    <SelectValue placeholder="-- Select User --" />
+                  <SelectTrigger id="category" className="bg-white/10">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                    {availablePayees.map((user: any) => (
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          {cat.image_url && (
+                            <img
+                              src={cat.image_url}
+                              alt={cat.name}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          )}
+                          <span>{cat.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="split-type">Split Type</Label>
+                <Select value={splitType} onValueChange={setSplitType}>
+                  <SelectTrigger id="split-type" className="bg-white/10">
+                    <SelectValue placeholder="Select split type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPENSE_SPLIT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {transactionType === "settlement" && (
+            <div className="space-y-2">
+              <Label htmlFor="paid-to">Paid to</Label>
+              <Select value={paidToUserName} onValueChange={setPaidToUserName}>
+                <SelectTrigger id="paid-to" className="bg-white/10">
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {userNames
+                    .filter((user) => user !== paidOrReceivedBy)
+                    .map((user) => (
                       <SelectItem key={user} value={user}>
                         {user}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {transactionType === "expense" && (
-              <>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={selectedCategoryId}
-                    onValueChange={setSelectedCategoryId}
-                    required
-                  >
-                    <SelectTrigger id="category" className="bg-background">
-                      <SelectValue placeholder="-- Select a Category --" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                      {categories.map((cat: any) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="splitType">Split Type</Label>
-                  <Select
-                    value={splitType}
-                    onValueChange={setSplitType}
-                    required
-                  >
-                    <SelectTrigger id="splitType" className="bg-background">
-                      <SelectValue placeholder="-- Select a Split Type --" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                      {EXPENSE_SPLIT_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-            {transactionType === "reimbursement" && (
-              <div>
-                <Label htmlFor="reimbursesTransaction">
-                  Reimburses Expense (Optional)
-                </Label>
-                <Select
-                  value={selectedReimbursesTransactionId}
-                  onValueChange={setSelectedReimbursesTransactionId}
-                >
-                  <SelectTrigger
-                    id="reimbursesTransaction"
-                    className="bg-background"
-                  >
-                    <SelectValue placeholder="-- None (General Reimbursement) --" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                    <SelectItem value="none">
-                      -- None (General Reimbursement) --
-                    </SelectItem>
-                    {availableExpensesForReimbursement.map((exp: any) => (
-                      <SelectItem key={exp.id} value={exp.id}>
-                        {exp.date} - {exp.description} (${exp.amount.toFixed(2)}
-                        )
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="flex gap-2 mt-4 justify-center">
-              <Button
-                type="submit"
-                className="bg-[#FFD54F] hover:bg-[#FFD54F] active:bg-[#FFD54F] text-black font-bold rounded shadow transition-colors duration-200 border-none"
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {transactionType === "reimbursement" && (
+            <div className="space-y-2">
+              <Label htmlFor="reimburses">Reimburses Transaction</Label>
+              <Select
+                value={selectedReimbursesTransactionId}
+                onValueChange={setSelectedReimbursesTransactionId}
               >
-                {isEditing ? "Update Transaction" : "Add Transaction"}
-              </Button>
+                <SelectTrigger id="reimburses" className="bg-white/10">
+                  <SelectValue placeholder="Select transaction to reimburse" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {availableExpensesForReimbursement.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.date} - {t.description} ({formatMoney(t.amount)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="fixed bottom-0 left-0 right-0 w-full p-4 z-10">
+            <div className="max-w-2xl mx-auto flex gap-4">
               {isEditing && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCancelEdit}
+                  className="flex-1 h-12 text-lg"
                 >
-                  Cancel Edit
+                  Cancel
                 </Button>
               )}
+              <Button
+                type="submit"
+                className="flex-1 bg-yellow-400 text-teal-900 hover:bg-yellow-500 h-12 text-lg"
+              >
+                {isEditing ? "Update Transaction" : "Add Transaction"}
+              </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

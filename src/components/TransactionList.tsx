@@ -1,43 +1,59 @@
-// src/components/TransactionList.jsx
+// src/components/TransactionList.tsx
 import React, { useState } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "./transactions/DataTable";
-import { getColumns, Transaction } from "./transactions/columns";
+import { getColumns } from "./transactions/columns";
 import { formatMoney } from "@/lib/utils";
-// import { Transaction } from "../App";
+import { Transaction, Category } from "@/types";
 
 interface TransactionListProps {
-  transactions: any[];
+  transactions: Transaction[];
+  allTransactions?: Transaction[];
   deleteTransaction: (id: string) => void;
+  handleSetEditingTransaction?: (transaction: Transaction) => void;
   className?: string;
   showValues?: boolean;
   incomeImageUrl?: string | null;
   settlementImageUrl?: string | null;
   reimbursementImageUrl?: string | null;
   variant?: "default" | "dialog";
+  userNames: string[];
+  categories: Category[];
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
+  allTransactions = [],
   deleteTransaction,
+  handleSetEditingTransaction,
   className = "",
   showValues = true,
   incomeImageUrl,
   settlementImageUrl,
   reimbursementImageUrl,
   variant = "default",
+  userNames,
+  categories,
 }) => {
-  const {
-    userNames,
-    handleSetEditingTransaction,
-    transactions: allTransactions,
-    categories = [],
-  } = useOutletContext<any>();
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [allExpanded, setAllExpanded] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(
+    null
+  );
 
   const getSplitTypeLabel = (splitTypeParam: string) => {
     if (!userNames || userNames.length < 2) {
@@ -65,11 +81,23 @@ const TransactionList: React.FC<TransactionListProps> = ({
   };
 
   const onEdit = (transaction: Transaction) => {
-    handleSetEditingTransaction(transaction);
+    if (handleSetEditingTransaction) {
+      handleSetEditingTransaction(transaction);
+    }
     navigate("/transactions");
   };
-  const onDelete = (transactionId: string) => {
-    deleteTransaction(transactionId);
+
+  const handleDeleteRequest = (transactionId: string) => {
+    setTransactionToDelete(transactionId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (transactionToDelete) {
+      deleteTransaction(transactionToDelete);
+    }
+    setIsDeleteDialogOpen(false);
+    setTransactionToDelete(null);
   };
 
   if (!transactions || transactions.length === 0) {
@@ -88,7 +116,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
       <div className="flex items-center justify-between mb-2">
         <h2
           className={`text-2xl font-bold ${
-            isDialog ? "text-white" : "text-primary"
+            isDialog ? "text-white" : "text-white"
           }`}
         >
           Transactions
@@ -133,11 +161,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               }
             }
             const isPositive = type === "income" || type === "reimbursement";
-            let dateLabel = t.date;
-            if (t.time) {
-              dateLabel = `${t.time}`;
-            }
-            // Expanded if allExpanded or expandedId === t.id
+            const dateLabel = t.date;
             const isExpanded = allExpanded || expandedId === t.id;
             return (
               <div key={t.id}>
@@ -151,7 +175,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   } flex flex-col overflow-hidden animate-fade-in user-select-none focus:outline-none`}
                   onClick={() => {
                     window.getSelection()?.removeAllRanges();
-                    if (allExpanded) return; // Don't allow individual collapse if all are expanded
+                    if (allExpanded) return;
                     setExpandedId(isExpanded ? null : t.id);
                   }}
                 >
@@ -175,7 +199,6 @@ const TransactionList: React.FC<TransactionListProps> = ({
                             );
                           }
                         }
-                        // Show transaction type image if no category image
                         if (!catImg) {
                           if (type === "income" && incomeImageUrl) {
                             return (
@@ -219,11 +242,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div
-                        className={`text-base font-semibold truncate ${
-                          isDialog ? "text-white" : "text-primary"
-                        }`}
-                      >
+                      <div className="text-base font-semibold truncate text-white">
                         {t.description}
                       </div>
                       <div
@@ -249,74 +268,71 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   </div>
                   {/* Expanded details and buttons inside the box */}
                   {isExpanded && (
-                    <div className="flex flex-col sm:flex-row gap-4 px-6 pb-4 pt-2 animate-fade-in">
-                      {/* Details left */}
+                    <div
+                      className={`px-4 pb-3 pt-2 border-t ${
+                        isDialog ? "border-gray-700" : "border-border"
+                      } bg-muted/20`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div
-                        className={`flex-1 text-sm space-y-1 ${
-                          isDialog ? "text-gray-300" : "text-muted-foreground"
+                        className={`grid grid-cols-2 gap-x-4 gap-y-2 text-sm ${
+                          isDialog ? "text-white" : ""
                         }`}
                       >
                         <div>
-                          Type: {type.charAt(0).toUpperCase() + type.slice(1)}
+                          <strong>Type:</strong> {type}
                         </div>
-                        <div>
-                          Category:{" "}
-                          {(() => {
-                            if (t.category_id) {
-                              const cat = categories.find(
-                                (c: any) => c.id === t.category_id
-                              );
-                              return cat ? cat.name : "Uncategorized";
-                            }
-                            return "Uncategorized";
-                          })()}
-                        </div>
-                        {type === "expense" && (
-                          <>
-                            <div>Paid by: {t.paid_by_user_name || "N/A"}</div>
-                            <div>
-                              Split: {getSplitTypeLabel(t.split_type || "")}
-                            </div>
-                          </>
+                        {type === "expense" && t.category_id && (
+                          <div>
+                            <strong>Category:</strong>{" "}
+                            {categories.find((c) => c.id === t.category_id)
+                              ?.name || "N/A"}
+                          </div>
                         )}
                         {type === "settlement" && (
-                          <>
-                            <div>Payer: {t.paid_by_user_name || "N/A"}</div>
-                            <div>Payee: {t.paid_to_user_name || "N/A"}</div>
-                          </>
+                          <div>
+                            <strong>Paid To:</strong> {t.paid_to_user_name}
+                          </div>
+                        )}
+                        {type === "expense" && (
+                          <div>
+                            <strong>Paid By:</strong> {t.paid_by_user_name}
+                          </div>
+                        )}
+                        {type === "expense" && t.split_type && (
+                          <div>
+                            <strong>Split:</strong>{" "}
+                            {getSplitTypeLabel(t.split_type)}
+                          </div>
                         )}
                         {(type === "income" || type === "reimbursement") && (
-                          <>
-                            <div>
-                              Received by: {t.paid_by_user_name || "N/A"}
-                            </div>
-                            {reimbursedExpenseDescription && (
-                              <div className="text-green-600">
-                                Reimburses: "{reimbursedExpenseDescription}"
-                              </div>
-                            )}
-                          </>
+                          <div>
+                            <strong>Received By:</strong> {t.paid_by_user_name}
+                          </div>
                         )}
+                        {type === "reimbursement" &&
+                          reimbursedExpenseDescription && (
+                            <div className="col-span-2">
+                              <strong>Reimburses:</strong>{" "}
+                              {reimbursedExpenseDescription}
+                            </div>
+                          )}
                       </div>
-                      {/* Buttons right */}
-                      <div className="flex flex-col sm:flex-row gap-2 items-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(t)}
-                          className={
-                            isDialog
-                              ? "bg-transparent text-white border-gray-500 hover:bg-white/10 w-full sm:w-auto"
-                              : "w-full sm:w-auto"
-                          }
-                        >
-                          Edit
-                        </Button>
+                      <div className="flex justify-end gap-2 mt-4">
+                        {handleSetEditingTransaction && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => onEdit(t)}
+                            className="text-white"
+                          >
+                            Edit
+                          </Button>
+                        )}
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => onDelete(t.id)}
-                          className="w-full sm:w-auto"
+                          onClick={() => handleDeleteRequest(t.id)}
                         >
                           Delete
                         </Button>
@@ -329,6 +345,26 @@ const TransactionList: React.FC<TransactionListProps> = ({
           })
         )}
       </div>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              transaction.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

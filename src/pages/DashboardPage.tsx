@@ -1,64 +1,34 @@
-// src/pages/DashboardPage.jsx
-import React, { useState, useMemo, useEffect, ChangeEvent } from "react";
+// src/pages/DashboardPage.tsx
+import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-// import { Transaction, Category, Sector } from "../App";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Eye, EyeOff, Filter as FilterIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Filter as FilterIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import BottomNavBar from "@/components/dashboard/BottomNavBar";
-import FloatingActionNav from "@/components/dashboard/FloatingActionNav";
-import DuckFabNav from "@/components/dashboard/DuckFabNav";
-
-import {
-  getFirstDayOfMonth,
-  getLastDayOfMonth,
-  formatDateForInput,
-  getFirstDayOfYear,
-  getLastDayOfYear,
-  getFirstDayOfPreviousMonth,
-  getFirstDayOfNextMonth,
-  parseInputDateLocal,
-} from "../utils/dateUtils";
 import BalanceSummary from "../components/dashboard/BalanceSummary";
 import ExpensesIncomeNetWidget from "../components/dashboard/TotalExpensesWidget";
-import CategoryBreakdownWidget from "../components/dashboard/CategoryBreakdownWidget";
 import TransactionList from "../components/TransactionList";
-import { supabase } from "../supabaseClient";
 import SectorCategoryPieChart from "../components/dashboard/SectorCategoryPieChart";
-
-// Use 'any' for types to resolve linter errors
-// type Transaction = any;
-// type Category = any;
-// type Sector = any;
+import FilterSheet from "../components/dashboard/FilterSheet";
+import { useTransactionFilters } from "../hooks/useTransactionFilters";
+import { Transaction, Category, Sector } from "@/types";
 
 interface DashboardPageContext {
-  transactions: any[];
+  transactions: Transaction[];
   userNames: string[];
-  categories: any[];
-  sectors: any[];
+  categories: Category[];
+  sectors: Sector[];
+  sectorCategoryEmptyStateImageUrl?: string;
+  incomeImageUrl?: string;
+  settlementImageUrl?: string;
+  reimbursementImageUrl?: string;
+  deleteTransaction: (id: string) => Promise<void>;
+  user1AvatarUrl?: string | null;
+  user2AvatarUrl?: string | null;
+  handleSetEditingTransaction: (transaction: Transaction) => void;
+  fabOpen: boolean;
 }
-
-type TransactionWithExtras = any;
 
 const DashboardPage: React.FC = () => {
   const {
@@ -67,771 +37,168 @@ const DashboardPage: React.FC = () => {
     categories,
     sectors,
     sectorCategoryEmptyStateImageUrl,
-    fetchTransactions: fetchTransactionsFromContext,
-  } = useOutletContext<
-    DashboardPageContext & {
-      sectorCategoryEmptyStateImageUrl?: string;
-      fetchTransactions?: () => Promise<void>;
-    }
-  >();
+    incomeImageUrl,
+    settlementImageUrl,
+    reimbursementImageUrl,
+    deleteTransaction,
+    user1AvatarUrl,
+    user2AvatarUrl,
+    handleSetEditingTransaction,
+    fabOpen,
+  } = useOutletContext<DashboardPageContext>();
 
-  const [startDate, setStartDate] = useState<string>(
-    formatDateForInput(getFirstDayOfMonth(new Date()))
-  );
-  const [endDate, setEndDate] = useState<string>(
-    formatDateForInput(getLastDayOfMonth(new Date()))
-  );
-  const [personInvolvementFilter, setPersonInvolvementFilter] = useState<{
-    user1: boolean;
-    user2: boolean;
-    shared: boolean;
-  }>({
-    user1: true,
-    user2: true,
-    shared: true,
-  });
-  const [categorySectorFilter, setCategorySectorFilter] =
-    useState<string>("all");
-  const [allTransactionsState, setAllTransactionsState] =
-    useState(transactions);
-  const [descriptionFilter, setDescriptionFilter] = useState("");
+  useEffect(() => {
+    // Set the value once on mount and don't update on resize.
+    // This prevents the jumpy behavior on mobile when the address bar hides.
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty("--vh", `${vh}px`);
+  }, []);
+
+  const {
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    personInvolvementFilter,
+    setPersonInvolvementFilter,
+    categorySectorFilter,
+    setCategorySectorFilter,
+    descriptionFilter,
+    setDescriptionFilter,
+    filteredTransactions,
+    isFiltered,
+  } = useTransactionFilters(transactions, categories, sectors, userNames);
+
   const [showValues, setShowValues] = useState(() => {
     const stored = localStorage.getItem("dashboard_show_values");
     return stored === null ? true : stored === "true";
   });
 
-  // Add state for transaction type images
-  const [incomeImageUrl, setIncomeImageUrl] = useState<string | null>(null);
-  const [settlementImageUrl, setSettlementImageUrl] = useState<string | null>(
-    null
-  );
-  const [reimbursementImageUrl, setReimbursementImageUrl] = useState<
-    string | null
-  >(null);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
-  const fetchTransactions = async () => {
-    try {
-      if (fetchTransactionsFromContext) {
-        await fetchTransactionsFromContext();
-      } else {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*, category:categories(name)")
-          .order("date", { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        const formattedData = data.map((t: any) => ({
-          ...t,
-          category_name: t.category ? t.category.name : "Uncategorized",
-        }));
-        setAllTransactionsState(formattedData);
-      }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  useEffect(() => {
-    setAllTransactionsState(transactions);
-  }, [transactions]);
-
-  useEffect(() => {
-    // Fetch transaction type images from app_settings
-    const fetchTransactionTypeImages = async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("key, value")
-        .in("key", [
-          "income_image_url",
-          "settlement_image_url",
-          "reimbursement_image_url",
-        ]);
-      if (data) {
-        const income = data.find((s: any) => s.key === "income_image_url");
-        const settlement = data.find(
-          (s: any) => s.key === "settlement_image_url"
-        );
-        const reimbursement = data.find(
-          (s: any) => s.key === "reimbursement_image_url"
-        );
-        if (income && income.value) setIncomeImageUrl(income.value);
-        if (settlement && settlement.value)
-          setSettlementImageUrl(settlement.value);
-        if (reimbursement && reimbursement.value)
-          setReimbursementImageUrl(reimbursement.value);
-      }
-    };
-    fetchTransactionTypeImages();
-  }, []);
-
-  useEffect(() => {
+  React.useEffect(() => {
     localStorage.setItem("dashboard_show_values", showValues.toString());
   }, [showValues]);
 
-  const handlePersonFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = event.target;
-    setPersonInvolvementFilter((prevFilter) => ({
-      ...prevFilter,
-      [name]: checked,
-    }));
-  };
+  if (!transactions) return <div>Loading...</div>;
 
-  const handleCategorySectorFilterChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-    setCategorySectorFilter(event.target.value);
-  };
-
-  // 1. Filter by Date (Base for all other filters)
-  const transactionsInDateRange = useMemo<TransactionWithExtras[]>(() => {
-    if (!allTransactionsState || allTransactionsState.length === 0) return [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-    return allTransactionsState.filter((t) => {
-      if (!t.date) return false;
-      const transactionDate = new Date(t.date);
-      return (
-        !isNaN(transactionDate.getTime()) &&
-        transactionDate >= start &&
-        transactionDate <= end
-      );
-    }) as TransactionWithExtras[];
-  }, [allTransactionsState, startDate, endDate]);
-
-  // 2. Pre-process transactions to apply linked reimbursements to expenses
-  const effectiveTransactions = useMemo<TransactionWithExtras[]>(() => {
-    if (!transactionsInDateRange) return [];
-    const expensesToAdjust = transactionsInDateRange
-      .filter((t) => t.transaction_type === "expense")
-      .map((expense) => ({
-        ...expense,
-        effectiveAmount: expense.amount,
-        category_name_for_reimbursement_logic: expense.category_name,
-      }));
-    const reimbursements = transactionsInDateRange.filter(
-      (t) => t.transaction_type === "reimbursement"
-    );
-    reimbursements.forEach((r) => {
-      if (r.reimburses_transaction_id) {
-        const originalExpense = expensesToAdjust.find(
-          (exp) => exp.id === r.reimburses_transaction_id
-        );
-        if (originalExpense) {
-          originalExpense.effectiveAmount -= r.amount;
-        }
-      }
-    });
-    return transactionsInDateRange.map((t) => {
-      if (t.transaction_type === "expense") {
-        const adjustedExpense = expensesToAdjust.find((exp) => exp.id === t.id);
-        return adjustedExpense
-          ? { ...adjustedExpense, amount: adjustedExpense.effectiveAmount }
-          : t;
-      }
-      return t;
-    }) as TransactionWithExtras[];
-  }, [transactionsInDateRange]);
-
-  // 3. Prepare transactions specifically for Expense Widgets (TotalExpenses, CategoryBreakdown)
-  // This list will contain only 'expense' type transactions with amounts adjusted based on person filter.
-  const expensesForWidgets = useMemo(() => {
-    if (!effectiveTransactions || !userNames || userNames.length < 2) return [];
-    const onlyUser1 =
-      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
-    const onlyUser2 =
-      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
-    const bothUsers =
-      personInvolvementFilter.user1 && personInvolvementFilter.user2;
-    const shared = personInvolvementFilter.shared;
-    return effectiveTransactions
-      .filter((t) => t.transaction_type === "expense")
-      .map((expense) => {
-        if (
-          expense.split_type === "user1_only" &&
-          personInvolvementFilter.user1
-        ) {
-          return expense;
-        }
-        if (
-          expense.split_type === "user2_only" &&
-          personInvolvementFilter.user2
-        ) {
-          return expense;
-        }
-        if (expense.split_type === "splitEqually" && shared) {
-          if (onlyUser1 || onlyUser2) {
-            return { ...expense, amount: expense.amount / 2 };
-          }
-          // both users or only shared checked
-          return expense;
-        }
-        return null;
-      })
-      .filter((expense): expense is TransactionWithExtras => expense !== null);
-  }, [effectiveTransactions, personInvolvementFilter, userNames]);
-
-  // 4. Filter by Person Involvement for the general TransactionList display (use raw, unadjusted transactions)
-  const transactionsByPersonForDisplayRaw = useMemo(() => {
-    if (!userNames || userNames.length < 2) return transactionsInDateRange;
-    const onlyUser1 =
-      personInvolvementFilter.user1 && !personInvolvementFilter.user2;
-    const onlyUser2 =
-      personInvolvementFilter.user2 && !personInvolvementFilter.user1;
-    const bothUsers =
-      personInvolvementFilter.user1 && personInvolvementFilter.user2;
-    const shared = personInvolvementFilter.shared;
-    return transactionsInDateRange.filter((t) => {
-      const type = t.transaction_type || "expense";
-      if (type === "expense") {
-        if (t.split_type === "user1_only" && personInvolvementFilter.user1)
-          return true;
-        if (t.split_type === "user2_only" && personInvolvementFilter.user2)
-          return true;
-        if (t.split_type === "splitEqually" && shared) return true;
-        return false;
-      }
-      if (type === "income") {
-        if (t.paid_by_user_name === "Shared") {
-          if (
-            bothUsers ||
-            (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
-          )
-            return true;
-          if (onlyUser1 || onlyUser2) return true; // show, but will be split in summary, here just show
-          return false;
-        }
-        if (onlyUser1) {
-          return t.paid_by_user_name === userNames[0];
-        } else if (onlyUser2) {
-          return t.paid_by_user_name === userNames[1];
-        } else if (
-          bothUsers ||
-          (!personInvolvementFilter.user1 && !personInvolvementFilter.user2)
-        ) {
-          return true;
-        }
-        return false;
-      }
-      // For other transaction types (reimbursement, settlement, etc), always include
-      return true;
-    });
-  }, [transactionsInDateRange, personInvolvementFilter, userNames]);
-
-  // 5. Filter by Category/Sector (applied to transactionsByPersonForDisplayRaw)
-  const finalFilteredTransactionsForDisplay = useMemo(() => {
-    if (categorySectorFilter === "all")
-      return transactionsByPersonForDisplayRaw.filter(
-        (t) =>
-          !descriptionFilter ||
-          (t.description &&
-            t.description
-              .toLowerCase()
-              .includes(descriptionFilter.toLowerCase()))
-      );
-    const [filterType, filterId] = categorySectorFilter.split("_");
-
-    return transactionsByPersonForDisplayRaw.filter((t) => {
-      const type = t.transaction_type || "expense";
-      // Only show expense and reimbursement transactions for category/sector filter
-      if (type !== "expense" && type !== "reimbursement") return false;
-
-      const categoryIdToMatch = t.category_id;
-      if (!categoryIdToMatch) return false;
-
-      // Description filter
-      if (
-        descriptionFilter &&
-        (!t.description ||
-          !t.description
-            .toLowerCase()
-            .includes(descriptionFilter.toLowerCase()))
-      ) {
-        return false;
-      }
-
-      if (filterType === "cat") {
-        return filterId === categoryIdToMatch;
-      }
-      if (filterType === "sec") {
-        const selectedSector = sectors.find(
-          (s) => s.id === (filterId as string)
-        );
-        if (!selectedSector || !selectedSector.category_ids) return false;
-        return selectedSector.category_ids.includes(categoryIdToMatch);
-      }
-      return true;
-    });
-  }, [
-    transactionsByPersonForDisplayRaw,
-    categorySectorFilter,
-    categories,
-    sectors,
-    descriptionFilter,
-  ]);
-
-  // 6. Apply category/sector filter to expensesForWidgets for widgets
-  const expensesForWidgetsFiltered = useMemo(() => {
-    if (categorySectorFilter === "all") {
-      return expensesForWidgets.filter(
-        (t) =>
-          !descriptionFilter ||
-          (t.description &&
-            t.description
-              .toLowerCase()
-              .includes(descriptionFilter.toLowerCase()))
-      );
-    }
-    const [filterType, filterId] = categorySectorFilter.split("_");
-    return expensesForWidgets.filter((t) => {
-      const type = t.transaction_type || "expense";
-      if (type !== "expense" && type !== "reimbursement") return false;
-      const categoryIdToMatch = t.category_id;
-      if (!categoryIdToMatch) return false;
-      // Description filter
-      if (
-        descriptionFilter &&
-        (!t.description ||
-          !t.description
-            .toLowerCase()
-            .includes(descriptionFilter.toLowerCase()))
-      ) {
-        return false;
-      }
-      if (filterType === "cat") {
-        return filterId === categoryIdToMatch;
-      }
-      if (filterType === "sec") {
-        const selectedSector = sectors.find(
-          (s) => s.id === (filterId as string)
-        );
-        if (!selectedSector || !selectedSector.category_ids) return false;
-        return selectedSector.category_ids.includes(categoryIdToMatch);
-      }
-      return true;
-    });
-  }, [
-    expensesForWidgets,
-    categorySectorFilter,
-    categories,
-    sectors,
-    descriptionFilter,
-  ]);
-
-  const getSelectedInvolvementText = () => {
-    if (!userNames || userNames.length < 2) return "All Users";
-    const selected = [];
-    if (personInvolvementFilter.user1) selected.push(userNames[0]);
-    if (personInvolvementFilter.user2) selected.push(userNames[1]);
-    if (selected.length === 2) return "All Relevant";
-    if (selected.length === 0) return "None Selected";
-    return selected.join(" & ");
-  };
-
-  const deleteTransaction = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this transaction?"))
-      return;
-    try {
-      const { error } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-      setAllTransactionsState((prev) => prev.filter((t) => t.id !== id));
-    } catch (err) {
-      alert("Error deleting transaction. Please try again.");
-      console.error(err);
-    }
-  };
-
-  const filtersActive =
-    startDate !== formatDateForInput(getFirstDayOfMonth(new Date())) ||
-    endDate !== formatDateForInput(getLastDayOfMonth(new Date())) ||
-    categorySectorFilter !== "all" ||
-    descriptionFilter.trim() !== "" ||
-    !personInvolvementFilter.user1 ||
-    !personInvolvementFilter.user2 ||
-    !personInvolvementFilter.shared;
-
-  // Helper to format the date range for the indicator
-  const getDateRangeLabel = () => {
-    const start = parseInputDateLocal(startDate);
-    const end = parseInputDateLocal(endDate);
-    // Check for full month
-    if (
-      start.getDate() === 1 &&
-      end.getDate() ===
-        new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate() &&
-      start.getFullYear() === end.getFullYear() &&
-      start.getMonth() === end.getMonth()
-    ) {
-      return start.toLocaleString(undefined, {
-        month: "long",
-        year: "numeric",
-      });
-    }
-    // Check for full year
-    if (
-      start.getDate() === 1 &&
-      start.getMonth() === 0 &&
-      end.getMonth() === 11 &&
-      end.getDate() === 31 &&
-      start.getFullYear() === end.getFullYear()
-    ) {
-      return start.getFullYear().toString();
-    }
-    // Otherwise, show range
-    return startDate === endDate ? startDate : `${startDate} to ${endDate}`;
-  };
+  const expenseTransactions = filteredTransactions.filter(
+    (t) => t.transaction_type === "expense"
+  );
 
   return (
-    <>
-      <div className="max-w-4xl mx-auto w-full px-2 py-4 sm:p-4 pb-32">
-        <div className="relative flex items-end mb-2">
-          <h2 className="text-2xl font-bold mr-2">Dashboard</h2>
-          <button
-            type="button"
-            aria-label={
-              showValues ? "Hide dollar values" : "Show dollar values"
-            }
-            onClick={() => setShowValues((v) => !v)}
-            className={cn(
-              "transition-colors rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ml-1",
-              showValues ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            {showValues ? (
-              <Eye className="w-5 h-5" />
-            ) : (
-              <EyeOff className="w-5 h-5" />
-            )}
-          </button>
-          <span
-            className="absolute right-0 text-xs text-muted-foreground bg-background/40 rounded px-2 py-0.5 border border-border font-normal mb-0.5"
-            style={{ bottom: 0 }}
-            title="Current date range"
-          >
-            {getDateRangeLabel()}
-          </span>
-        </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              className="fixed right-2 sm:right-4 top-1/2 z-50 rounded-full shadow-lg p-3 flex items-center justify-center
-                md:p-5 md:w-16 md:h-16 md:text-xl"
-              style={{ transform: "translateY(-50%)" }}
-              aria-label="Open Filters"
-            >
-              <span className="relative">
-                <FilterIcon
-                  className={cn(
-                    "w-6 h-6 md:w-8 md:h-8 transition-colors",
-                    filtersActive ? "text-primary" : "text-muted-foreground"
-                  )}
-                />
-                {filtersActive && (
-                  <span className="absolute top-0 right-0 block w-2 h-2 rounded-full bg-primary border-2 border-background" />
-                )}
-              </span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent
-            side="right"
-            className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
-            style={{
-              background:
-                "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
-            }}
-          >
-            <SheetHeader>
-              <SheetTitle>Filters</SheetTitle>
-              <SheetDescription>
-                Refine the dashboard data using the filters below.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex flex-col gap-6 pt-4">
-              {/* Quick Date Range Controls */}
-              <div className="flex items-center gap-2 mb-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    const prevMonth = getFirstDayOfPreviousMonth(
-                      parseInputDateLocal(startDate)
-                    );
-                    setStartDate(formatDateForInput(prevMonth));
-                    setEndDate(
-                      formatDateForInput(getLastDayOfMonth(prevMonth))
-                    );
-                  }}
-                  aria-label="Previous Month"
-                >
-                  <span className="text-lg">←</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    setStartDate(formatDateForInput(getFirstDayOfMonth(now)));
-                    setEndDate(formatDateForInput(getLastDayOfMonth(now)));
-                  }}
-                >
-                  This Month
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    const lastMonth = getFirstDayOfPreviousMonth(now);
-                    setStartDate(
-                      formatDateForInput(getFirstDayOfMonth(lastMonth))
-                    );
-                    setEndDate(
-                      formatDateForInput(getLastDayOfMonth(lastMonth))
-                    );
-                  }}
-                >
-                  Last Month
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    setStartDate(formatDateForInput(getFirstDayOfYear(now)));
-                    setEndDate(formatDateForInput(getLastDayOfYear(now)));
-                  }}
-                >
-                  This Year
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    const nextMonth = getFirstDayOfNextMonth(
-                      parseInputDateLocal(startDate)
-                    );
-                    setStartDate(formatDateForInput(nextMonth));
-                    setEndDate(
-                      formatDateForInput(getLastDayOfMonth(nextMonth))
-                    );
-                  }}
-                  aria-label="Next Month"
-                >
-                  <span className="text-lg">→</span>
-                </Button>
-              </div>
-              {/* From/To dates */}
-              <div className="flex gap-2">
-                <div className="flex flex-col gap-2 w-1/2">
-                  <Label htmlFor="startDate">From</Label>
-                  <Input
-                    type="date"
-                    id="startDate"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-                  />
-                </div>
-                <div className="flex flex-col gap-2 w-1/2">
-                  <Label htmlFor="endDate">To</Label>
-                  <Input
-                    type="date"
-                    id="endDate"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-                  />
-                </div>
-              </div>
-              {/* Category/Sector select */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="categorySectorFilter">
-                  Filter by Category/Sector
-                </Label>
-                <Select
-                  value={categorySectorFilter}
-                  onValueChange={setCategorySectorFilter}
-                >
-                  <SelectTrigger
-                    id="categorySectorFilter"
-                    className="w-full bg-background"
-                  >
-                    <SelectValue placeholder="All Categories/Sectors" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 border border-border">
-                    <SelectItem value="all">All Categories/Sectors</SelectItem>
-                    <SelectItem value="label_categories" disabled>
-                      Categories
-                    </SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={`cat_${cat.id}`} value={`cat_${cat.id}`}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="label_sectors" disabled>
-                      Sectors
-                    </SelectItem>
-                    {sectors.map((sec) => (
-                      <SelectItem key={`sec_${sec.id}`} value={`sec_${sec.id}`}>
-                        {sec.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Show Data for checkboxes */}
-              <div className="flex flex-col gap-2">
-                <Label>Show Data for</Label>
-                <div className="flex gap-4">
-                  {userNames && userNames.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="filterUser1"
-                        checked={personInvolvementFilter.user1}
-                        onCheckedChange={(checked) =>
-                          setPersonInvolvementFilter((prev) => ({
-                            ...prev,
-                            user1: !!checked,
-                          }))
-                        }
-                        className="dashboard-filter-checkbox bg-background"
-                      />
-                      <Label htmlFor="filterUser1">{userNames[0]}</Label>
-                    </div>
-                  )}
-                  {userNames && userNames.length > 1 && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="filterUser2"
-                        checked={personInvolvementFilter.user2}
-                        onCheckedChange={(checked) =>
-                          setPersonInvolvementFilter((prev) => ({
-                            ...prev,
-                            user2: !!checked,
-                          }))
-                        }
-                        className="dashboard-filter-checkbox bg-background"
-                      />
-                      <Label htmlFor="filterUser2">{userNames[1]}</Label>
-                    </div>
-                  )}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="filterShared"
-                      checked={personInvolvementFilter.shared}
-                      onCheckedChange={(checked) =>
-                        setPersonInvolvementFilter((prev) => ({
-                          ...prev,
-                          shared: !!checked,
-                        }))
-                      }
-                      className="dashboard-filter-checkbox bg-background"
-                    />
-                    <Label htmlFor="filterShared">Shared</Label>
-                  </div>
-                </div>
-              </div>
-              {/* Description filter */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="descriptionFilter">Filter by Description</Label>
-                <Input
-                  type="text"
-                  id="descriptionFilter"
-                  value={descriptionFilter}
-                  onChange={(e) => setDescriptionFilter(e.target.value)}
-                  placeholder="Search description..."
-                  className="h-10 rounded-md px-3 py-2 bg-background text-sm appearance-none w-full"
-                />
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <BalanceSummary
-          transactionsInDateRange={transactionsInDateRange}
-          showValues={showValues}
+    <div className="bg-gradient-to-b from-[#004D40] to-[#26A69A] text-gray-200 min-h-[calc(var(--vh,1vh)*100)]">
+      <div className="relative h-[calc(var(--vh,1vh)*50)] flex items-center justify-center text-center">
+        <img
+          src="/BankerQuack.png"
+          alt="Banker Quack"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none object-[center_30%] sm:object-center z-0"
         />
-        <ExpensesIncomeNetWidget
-          transactionsInDateRange={effectiveTransactions.filter((t) => {
-            // Apply the same filters as expensesForWidgetsFiltered, but allow all transaction types
-            if (categorySectorFilter === "all") {
-              return (
-                !descriptionFilter ||
-                (t.description &&
-                  t.description
-                    .toLowerCase()
-                    .includes(descriptionFilter.toLowerCase()))
-              );
-            }
-            const [filterType, filterId] = categorySectorFilter.split("_");
-            const type = t.transaction_type || "expense";
-            const categoryIdToMatch = t.category_id;
-            if (!categoryIdToMatch) return false;
-            if (
-              descriptionFilter &&
-              (!t.description ||
-                !t.description
-                  .toLowerCase()
-                  .includes(descriptionFilter.toLowerCase()))
-            ) {
-              return false;
-            }
-            if (filterType === "cat") {
-              return filterId === categoryIdToMatch;
-            }
-            if (filterType === "sec") {
-              const selectedSector = sectors.find(
-                (s) => s.id === (filterId as string)
-              );
-              if (!selectedSector || !selectedSector.category_ids) return false;
-              return selectedSector.category_ids.includes(categoryIdToMatch);
-            }
-            return true;
-          })}
-          // Pass all transactions for trend calculation
-          context={{
-            userNames,
-            personInvolvementFilter,
-            allTransactions: allTransactionsState,
+        <div className="absolute inset-0 bg-black/30 z-0" />
+        <h1
+          className="text-6xl md:text-8xl font-bold text-yellow-100 z-10"
+          style={{
+            fontFamily: "'Dancing Script', cursive",
+            textShadow: "2px 2px 8px rgba(0,0,0,0.7)",
           }}
-          showValues={showValues}
-        />
-        <div className="mb-8">
-          <CategoryBreakdownWidget
-            transactionsInDateRange={expensesForWidgetsFiltered}
-          />
-          {/* Pie chart for sector/category breakdown */}
-          <SectorCategoryPieChart
-            transactionsInDateRange={expensesForWidgetsFiltered}
-            categories={categories}
-            sectors={sectors}
-            showValues={showValues}
-            emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
-          />
-        </div>
-        <TransactionList
-          className="mt-0"
-          transactions={finalFilteredTransactionsForDisplay}
-          deleteTransaction={deleteTransaction}
-          showValues={showValues}
-          incomeImageUrl={incomeImageUrl}
-          settlementImageUrl={settlementImageUrl}
-          reimbursementImageUrl={reimbursementImageUrl}
-        />
+        >
+          Bank of Quack
+        </h1>
       </div>
-      <DuckFabNav />
-    </>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setIsFilterSheetOpen(true)}
+        className={cn(
+          "fixed bottom-28 right-4 z-[60] bg-black/30 text-white rounded-full w-14 h-14 hover:bg-black/50 transition-all duration-300",
+          isFiltered && "border-2 border-yellow-400",
+          fabOpen && "translate-y-24 opacity-0 pointer-events-none"
+        )}
+      >
+        <FilterIcon />
+      </Button>
+
+      <FilterSheet
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        descriptionFilter={descriptionFilter}
+        setDescriptionFilter={setDescriptionFilter}
+        personInvolvementFilter={personInvolvementFilter}
+        setPersonInvolvementFilter={setPersonInvolvementFilter}
+        userNames={userNames}
+        categorySectorFilter={categorySectorFilter}
+        setCategorySectorFilter={setCategorySectorFilter}
+        categories={categories}
+        sectors={sectors}
+        isOpen={isFilterSheetOpen}
+        setIsOpen={setIsFilterSheetOpen}
+      />
+
+      <div className="max-w-4xl mx-auto w-full p-4 relative z-20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">Dashboard</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowValues((prev) => !prev)}
+              className="text-white hover:bg-white/10"
+            >
+              {showValues ? <EyeOff /> : <Eye />}
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <BalanceSummary
+            transactions={filteredTransactions}
+            allTransactions={transactions}
+            userNames={userNames}
+            user1AvatarUrl={user1AvatarUrl || null}
+            user2AvatarUrl={user2AvatarUrl || null}
+            showValues={showValues}
+          />
+          <ExpensesIncomeNetWidget
+            transactions={filteredTransactions}
+            userNames={userNames}
+            showValues={showValues}
+            personInvolvementFilter={personInvolvementFilter}
+          />
+          <SectorCategoryPieChart
+            sectors={sectors}
+            categories={categories}
+            transactions={filteredTransactions}
+            allTransactions={transactions}
+            emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
+            showValues={showValues}
+            deleteTransaction={deleteTransaction}
+            userNames={userNames}
+            incomeImageUrl={incomeImageUrl}
+            settlementImageUrl={settlementImageUrl}
+            reimbursementImageUrl={reimbursementImageUrl}
+            handleSetEditingTransaction={handleSetEditingTransaction}
+          />
+          <Card>
+            <CardContent className="pt-6">
+              <TransactionList
+                transactions={filteredTransactions}
+                categories={categories}
+                userNames={userNames}
+                showValues={showValues}
+                incomeImageUrl={incomeImageUrl}
+                settlementImageUrl={settlementImageUrl}
+                reimbursementImageUrl={reimbursementImageUrl}
+                deleteTransaction={deleteTransaction}
+                handleSetEditingTransaction={handleSetEditingTransaction}
+                allTransactions={transactions}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 

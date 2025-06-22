@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { PieChart, Pie, Sector, Label } from "recharts";
+import { PieChart, Pie, Sector as RechartsSector, Label } from "recharts";
 import {
   Select,
   SelectContent,
@@ -27,10 +27,10 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetClose,
 } from "@/components/ui/sheet";
 import TransactionList from "@/components/TransactionList";
-import { useOutletContext } from "react-router-dom";
+import { Transaction, Category, Sector as SectorType } from "@/types";
+import { formatMoney } from "@/lib/utils";
 
 const CHART_COLORS = [
   "#26A69A", // Teal
@@ -41,32 +41,41 @@ const CHART_COLORS = [
   "#FFD54F", // Gold Yellow
   "#AED581", // Light Green
   "#004D40", // Deep Teal (background match)
-  //"#FFF9C4", // Pale Yellow
-  //"#4DD0E1", // Cyan
-  //"#81D4FA", // Light Blue
-  //"#64B5F6", // Blue
-  // Add more if needed
 ];
 
 interface SectorCategoryPieChartProps {
-  transactionsInDateRange: any[];
-  categories: any[];
-  sectors: any[];
+  transactions: Transaction[];
+  allTransactions: Transaction[];
+  categories: Category[];
+  sectors: SectorType[];
   showValues?: boolean;
   emptyStateImageUrl?: string;
+  deleteTransaction: (id: string) => Promise<void>;
+  userNames: string[];
+  incomeImageUrl?: string;
+  settlementImageUrl?: string;
+  reimbursementImageUrl?: string;
+  handleSetEditingTransaction: (transaction: Transaction) => void;
 }
 
 const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
-  transactionsInDateRange,
+  transactions,
+  allTransactions,
   categories,
   sectors,
   showValues = true,
   emptyStateImageUrl,
+  deleteTransaction,
+  userNames,
+  incomeImageUrl,
+  settlementImageUrl,
+  reimbursementImageUrl,
+  handleSetEditingTransaction,
 }) => {
-  // Aggregate sector totals
   const sectorTotals = useMemo(() => {
     const map: Record<string, number> = {};
-    transactionsInDateRange
+    // First, add up all the expenses
+    transactions
       .filter((t) => t.transaction_type === "expense")
       .forEach((t) => {
         const cat = categories.find((c) => c.id === t.category_id);
@@ -75,6 +84,27 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
         if (!sector) return;
         map[sector.id] = (map[sector.id] || 0) + (t.amount || 0);
       });
+
+    // Then, subtract the reimbursements
+    transactions
+      .filter(
+        (t) =>
+          t.transaction_type === "reimbursement" && t.reimburses_transaction_id
+      )
+      .forEach((r) => {
+        const originalExpense = allTransactions.find(
+          (t) => t.id === r.reimburses_transaction_id
+        );
+        if (!originalExpense || !originalExpense.category_id) return;
+        const cat = categories.find(
+          (c) => c.id === originalExpense.category_id
+        );
+        if (!cat) return;
+        const sector = sectors.find((s) => s.category_ids.includes(cat.id));
+        if (!sector) return;
+        map[sector.id] = (map[sector.id] || 0) - (r.amount || 0);
+      });
+
     return sectors
       .map((s, i) => ({
         id: s.id,
@@ -83,46 +113,73 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
         fill: CHART_COLORS[i % CHART_COLORS.length],
       }))
       .filter((s) => s.value > 0);
-  }, [transactionsInDateRange, categories, sectors]);
+  }, [transactions, categories, sectors, allTransactions]);
 
-  // Aggregate category totals for a sector
   const getCategoryTotalsForSector = (sectorId: string) => {
     const sector = sectors.find((s) => s.id === sectorId);
     if (!sector) return [];
     const map: Record<string, number> = {};
-    transactionsInDateRange
-      .filter((t) => t.transaction_type === "expense")
+    // Add expenses
+    transactions
+      .filter(
+        (t) =>
+          t.transaction_type === "expense" &&
+          t.category_id &&
+          sector.category_ids.includes(t.category_id)
+      )
       .forEach((t) => {
-        if (!t.category_id) return;
-        if (!sector.category_ids.includes(t.category_id)) return;
-        map[t.category_id] = (map[t.category_id] || 0) + (t.amount || 0);
+        map[t.category_id!] = (map[t.category_id!] || 0) + (t.amount || 0);
       });
-    return sector.category_ids
-      .map((catId: string, i: number) => {
-        const cat = categories.find((c) => c.id === catId);
-        return cat && map[catId]
-          ? {
-              id: cat.id,
-              name: cat.name,
-              value: map[catId],
-              fill: CHART_COLORS[i % CHART_COLORS.length],
-            }
-          : null;
-      })
-      .filter(Boolean) as {
-      id: string;
-      name: string;
-      value: number;
-      fill: string;
-    }[];
+
+    // Subtract reimbursements
+    transactions
+      .filter(
+        (t) =>
+          t.transaction_type === "reimbursement" && t.reimburses_transaction_id
+      )
+      .forEach((r) => {
+        const originalExpense = allTransactions.find(
+          (t) => t.id === r.reimburses_transaction_id
+        );
+        if (
+          !originalExpense ||
+          !originalExpense.category_id ||
+          !sector.category_ids.includes(originalExpense.category_id)
+        )
+          return;
+
+        map[originalExpense.category_id] =
+          (map[originalExpense.category_id] || 0) - (r.amount || 0);
+      });
+
+    return (
+      sector.category_ids
+        .map((catId: string, i: number) => {
+          const cat = categories.find((c) => c.id === catId);
+          return cat && map[catId]
+            ? {
+                id: cat.id,
+                name: cat.name,
+                value: map[catId],
+                fill: CHART_COLORS[i % CHART_COLORS.length],
+                image_url: cat.image_url,
+              }
+            : null;
+        })
+        .filter(Boolean) as {
+        id: string;
+        name: string;
+        value: number;
+        fill: string;
+        image_url?: string;
+      }[]
+    ).sort((a, b) => b.value - a.value);
   };
 
-  // Dropdown state
   const [selectedSectorId, setSelectedSectorId] = useState<string | "all">(
     "all"
   );
 
-  // Pie data and config
   const pieData =
     selectedSectorId === "all"
       ? sectorTotals
@@ -139,65 +196,64 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     return config;
   }, [pieData]);
 
-  // Pie chart active index
   const [activeIndex, setActiveIndex] = useState(0);
   React.useEffect(() => {
     setActiveIndex(0);
   }, [selectedSectorId, pieData.length]);
 
-  // Dropdown options
   const sectorOptions = [
     { id: "all", name: "All Sectors" },
     ...sectors.map((s) => ({ id: s.id, name: s.name })),
   ];
 
-  // Pie label in center
   const renderCenterLabel = ({ viewBox }: any) => {
     if (!pieData[activeIndex]) return null;
     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-      const cx = viewBox.cx;
-      const cy = viewBox.cy;
-      // Prepare text values
+      const { cx, cy } = viewBox;
       const amountText = showValues
         ? formatMoney(pieData[activeIndex].value)
         : "•••••";
       const nameText = pieData[activeIndex].name;
-      // Font sizes
-      const amountFontSize = 22;
-      const nameFontSize = 15;
+      const words = nameText.split(" ");
+      let lines = [nameText];
+      // If the name is long and has spaces, split it into two lines
+      if (nameText.length > 12 && words.length > 1) {
+        const midpoint = Math.ceil(words.length / 2);
+        lines = [
+          words.slice(0, midpoint).join(" "),
+          words.slice(midpoint).join(" "),
+        ];
+      }
+
+      const isMultiLine = lines.length > 1;
+      const amountY = isMultiLine ? cy - 14 : cy - 4;
+      const nameY = isMultiLine ? cy + 10 : cy + 20;
+
       return (
         <g>
           <text
             x={cx}
-            y={cy - 4}
+            y={amountY}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="pointer-events-none"
+            className="fill-foreground text-2xl font-bold"
+            style={{ filter: "drop-shadow(0px 1px 3px rgb(0 0 0 / 0.8))" }}
           >
-            <tspan
-              className="fill-white text-2xl font-bold"
-              style={{ fontSize: amountFontSize }}
-              x={cx}
-              dy={0}
-            >
-              {amountText}
-            </tspan>
+            {amountText}
           </text>
           <text
             x={cx}
-            y={cy + amountFontSize / 2 + 8}
+            y={nameY}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="pointer-events-none"
+            className="fill-muted-foreground text-base"
+            style={{ filter: "drop-shadow(0px 1px 3px rgb(0 0 0 / 0.8))" }}
           >
-            <tspan
-              className="fill-white text-base"
-              style={{ fontSize: nameFontSize, opacity: 0.85 }}
-              x={cx}
-              dy={0}
-            >
-              {nameText}
-            </tspan>
+            {lines.map((line, index) => (
+              <tspan x={cx} dy={index > 0 ? "1.2em" : 0} key={index}>
+                {line}
+              </tspan>
+            ))}
           </text>
         </g>
       );
@@ -205,344 +261,252 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
     return null;
   };
 
-  // Helper to format money
-  const formatMoney = (amount: number) =>
-    `$${amount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const total = useMemo(
+    () => pieData.reduce((sum, item) => sum + item.value, 0),
+    [pieData]
+  );
 
-  // Calculate total for percentage
-  const total = sectorTotals.reduce((sum, item) => sum + item.value, 0);
+  const breakdownSectors = useMemo(() => {
+    return (
+      selectedSectorId === "all"
+        ? sectors.filter((s) => sectorTotals.some((st) => st.id === s.id))
+        : sectors.filter((s) => s.id === selectedSectorId)
+    ).sort((a, b) => {
+      const aValue = sectorTotals.find((st) => st.id === a.id)?.value || 0;
+      const bValue = sectorTotals.find((st) => st.id === b.id)?.value || 0;
+      return bValue - aValue;
+    });
+  }, [selectedSectorId, sectors, sectorTotals]);
 
-  // Text breakdown data
-  let breakdownSectors: typeof sectors = [];
-  if (selectedSectorId === "all") {
-    breakdownSectors = sectors.filter((s) =>
-      pieData.find((p) => p.id === s.id)
-    );
-  } else {
-    const sector = sectors.find((s) => s.id === selectedSectorId);
-    breakdownSectors = sector ? [sector] : [];
-  }
-  // Sort breakdownSectors by value descending
-  breakdownSectors = breakdownSectors.slice().sort((a, b) => {
-    const aValue = sectorTotals.find((p) => p.id === a.id)?.value || 0;
-    const bValue = sectorTotals.find((p) => p.id === b.id)?.value || 0;
-    return bValue - aValue;
-  });
-
-  // For each sector, get its categories and totals
-  const getCategoryBreakdown = (sector: any) => {
-    const map: Record<string, number> = {};
-    transactionsInDateRange
-      .filter((t) => t.transaction_type === "expense")
-      .forEach((t) => {
-        if (!t.category_id) return;
-        if (!sector.category_ids.includes(t.category_id)) return;
-        map[t.category_id] = (map[t.category_id] || 0) + (t.amount || 0);
-      });
-    // Use correct sector total for percentage
-    let totalSector = 0;
-    if (selectedSectorId === "all") {
-      totalSector = sectorTotals.find((p) => p.id === sector.id)?.value || 0;
-    } else {
-      totalSector = Object.values(map).reduce((sum, v) => sum + v, 0);
-    }
-    // Build and sort categories by amount descending
-    return sector.category_ids
-      .map((catId: string) => {
-        const cat = categories.find((c) => c.id === catId);
-        const amount = map[catId] || 0;
-        return cat && amount > 0
-          ? {
-              id: cat.id,
-              name: cat.name,
-              amount,
-              percentage: totalSector > 0 ? (amount / totalSector) * 100 : 0,
-            }
-          : null;
-      })
-      .filter(Boolean)
-      .sort(
-        (a: { amount: number }, b: { amount: number }) => b.amount - a.amount
-      ) as {
-      id: string;
-      name: string;
-      amount: number;
-      percentage: number;
-    }[];
-  };
-
-  // State for expanded accordions
   const [expandedSectors, setExpandedSectors] = useState<string[]>([]);
+  const allExpanded = expandedSectors.length === breakdownSectors.length;
 
-  // Helper to get all sector ids in breakdown
-  const allSectorIds = breakdownSectors.map((s) => s.id);
-  const allExpanded =
-    expandedSectors.length === allSectorIds.length && allSectorIds.length > 0;
-
-  // Handler for expand/collapse all
   const handleExpandCollapseAll = () => {
     if (allExpanded) {
       setExpandedSectors([]);
     } else {
-      setExpandedSectors(allSectorIds);
+      setExpandedSectors(breakdownSectors.map((s) => s.id));
     }
   };
 
-  // Sync expanded sectors when breakdownSectors changes
-  React.useEffect(() => {
-    setExpandedSectors([]);
-  }, [selectedSectorId, breakdownSectors.length]);
+  const [isSheetOpen, setSheetOpen] = useState(false);
+  const [sheetTransactions, setSheetTransactions] = useState<Transaction[]>([]);
+  const [sheetTitle, setSheetTitle] = useState("");
 
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
-  );
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
+  const handleBreakdownClick = (
+    type: "sector" | "category",
+    id: string,
+    name: string
+  ) => {
+    let relevantExpenses: Transaction[] = [];
+    if (type === "sector") {
+      const sector = sectors.find((s) => s.id === id);
+      if (sector) {
+        relevantExpenses = transactions.filter(
+          (t) =>
+            t.transaction_type === "expense" &&
+            sector.category_ids.includes(t.category_id || "")
+        );
+      }
+    } else {
+      relevantExpenses = transactions.filter(
+        (t) => t.transaction_type === "expense" && t.category_id === id
+      );
+    }
 
-  const context = useOutletContext<any>();
-  const imageUrl =
-    emptyStateImageUrl ?? context?.sectorCategoryEmptyStateImageUrl;
+    const relevantExpenseIds = relevantExpenses.map((t) => t.id);
+    const relevantReimbursements = transactions.filter(
+      (t) =>
+        t.transaction_type === "reimbursement" &&
+        t.reimburses_transaction_id &&
+        relevantExpenseIds.includes(t.reimburses_transaction_id)
+    );
+
+    const finalTransactions = [...relevantExpenses, ...relevantReimbursements];
+
+    setSheetTransactions(finalTransactions);
+    setSheetTitle(name);
+    setSheetOpen(true);
+  };
+
+  if (total === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Sector & Category Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center p-6 min-h-[400px]">
+          {emptyStateImageUrl ? (
+            <img
+              src={emptyStateImageUrl}
+              alt="No data available"
+              className="w-48 h-48 object-contain"
+            />
+          ) : (
+            <p className="text-muted-foreground">
+              No expenses in this date range.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <>
-      <Card className="flex flex-col">
-        <ChartStyle id="sector-category-pie" config={chartConfig} />
-        <CardHeader className="flex-row items-start space-y-0 pb-0">
-          <div className="grid gap-1">
-            <CardTitle>Sector & Category Breakdown</CardTitle>
-          </div>
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>Sector & Category Breakdown</CardTitle>
+          {breakdownSectors.length > 1 && (
+            <Button variant="ghost" size="sm" onClick={handleExpandCollapseAll}>
+              {allExpanded ? "Collapse All" : "Expand All"}
+            </Button>
+          )}
+        </div>
+        <div className="mt-4">
           <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
-            <SelectTrigger
-              className="ml-auto h-7 w-[160px] rounded-lg pl-2.5"
-              aria-label="Select a sector"
-            >
-              <SelectValue placeholder="Select sector" />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a sector" />
             </SelectTrigger>
-            <SelectContent align="end" className="rounded-xl">
+            <SelectContent>
               {sectorOptions.map((opt) => (
-                <SelectItem
-                  key={opt.id}
-                  value={opt.id}
-                  className="rounded-lg [&_span]:flex"
-                >
-                  <div className="flex items-center gap-2 text-xs">
-                    <span
-                      className="flex h-3 w-3 shrink-0 rounded-sm"
-                      style={{
-                        backgroundColor: chartConfig[opt.id]?.color || "#ccc",
-                      }}
-                    />
-                    {opt.name}
-                  </div>
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </CardHeader>
-        <CardContent
-          className={
-            breakdownSectors.length === 0
-              ? "flex flex-col items-center justify-center min-h-[300px] py-12"
-              : "flex flex-col items-center pb-0"
-          }
-        >
-          {breakdownSectors.length === 0 ? (
-            imageUrl ? (
-              <div className="flex flex-col items-center">
-                <div className="w-48 h-48 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
-                  <img
-                    src={imageUrl}
-                    alt="No data"
-                    className="object-contain w-full h-full"
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col items-center gap-8">
+          <ChartContainer
+            config={chartConfig}
+            className="w-full h-[300px] aspect-square"
+          >
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                strokeWidth={2}
+                activeIndex={activeIndex}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                activeShape={(props: any) => (
+                  <RechartsSector
+                    {...props}
+                    outerRadius={props.outerRadius + 8}
                   />
-                </div>
-                <p className="text-muted-foreground text-center mt-4">
-                  No data to show.
-                </p>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center">
-                No data to show.
-              </p>
-            )
-          ) : (
-            <>
-              <ChartContainer
-                id="sector-category-pie"
-                config={chartConfig}
-                className="mx-auto aspect-square w-full max-w-[300px]"
-              >
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    strokeWidth={5}
-                    activeIndex={activeIndex}
-                    onMouseEnter={(_, idx) => setActiveIndex(idx)}
-                    onTouchStart={(_, idx) => setActiveIndex(idx)}
-                    activeShape={({ outerRadius = 0, ...props }) => (
-                      <g>
-                        <Sector {...props} outerRadius={outerRadius + 10} />
-                        <Sector
-                          {...props}
-                          outerRadius={outerRadius + 25}
-                          innerRadius={outerRadius + 12}
-                        />
-                      </g>
-                    )}
-                  >
-                    <Label content={renderCenterLabel} />
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-              {/* Text breakdown below the chart */}
-              <div className="w-full mt-6 mx-auto md:max-w-3xl">
-                {breakdownSectors.length > 1 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mb-2 ml-auto block"
-                    onClick={handleExpandCollapseAll}
-                  >
-                    {allExpanded ? "Collapse All" : "Expand All"}
-                  </Button>
                 )}
-                <Accordion
-                  type="multiple"
-                  value={expandedSectors}
-                  onValueChange={setExpandedSectors}
-                >
-                  {breakdownSectors.map((sector) => {
-                    const sectorTotal =
-                      sectorTotals.find((p) => p.id === sector.id)?.value || 0;
-                    const sectorPercent =
-                      total > 0 ? (sectorTotal / total) * 100 : 0;
-                    const categoriesBreakdown = getCategoryBreakdown(sector);
-                    return (
-                      <AccordionItem key={sector.id} value={sector.id}>
-                        <AccordionTrigger className="flex items-center font-bold text-base px-0">
-                          <span className="text-left flex-1">
-                            {sector.name}
-                          </span>
-                          <span className="text-right min-w-[120px] flex flex-col items-end">
-                            {showValues ? formatMoney(sectorTotal) : "•••••"}
-                            <span className="ml-2 text-xs text-muted-foreground block">
-                              ({sectorPercent.toFixed(1)}%)
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          {categoriesBreakdown.length > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 w-full px-2 py-2 place-items-center">
-                              {categoriesBreakdown.map((cat) => {
-                                const catObj = categories.find(
-                                  (c) => c.id === cat.id
-                                );
-                                return (
-                                  <div
-                                    key={cat.id}
-                                    className="flex flex-col items-center w-24 sm:w-28 cursor-pointer group"
-                                    onClick={() => {
-                                      setSelectedCategoryId(cat.id);
-                                      setSelectedCategoryName(cat.name);
-                                      setCategoryModalOpen(true);
-                                    }}
-                                  >
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border-2 border-yellow-400 shadow-sm mb-1 group-hover:scale-105 transition-transform">
-                                      {catObj?.image_url ? (
-                                        <img
-                                          src={catObj.image_url}
-                                          alt={cat.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <span className="text-2xl text-muted-foreground">
-                                          🗂️
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div
-                                      className="text-xs font-semibold text-center truncate w-full"
-                                      title={cat.name}
-                                    >
-                                      {cat.name}
-                                    </div>
-                                    <div className="text-sm font-bold text-center">
-                                      {showValues
-                                        ? formatMoney(cat.amount)
-                                        : "•••••"}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground text-center">
-                                      ({cat.percentage.toFixed(1)}%)
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-      {/* Category Transactions Modal */}
-      <Sheet open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
-        <SheetContent
-          side="right"
-          className="max-w-lg w-full border-l border-border shadow-xl p-8 text-white"
-          style={{
-            background: "linear-gradient(to bottom, #004D40 0%, #26A69A 100%)",
-          }}
-        >
-          <SheetHeader>
-            <div className="flex items-center gap-3 py-2">
-              {(() => {
-                const catObj = categories.find(
-                  (c) => c.id === selectedCategoryId
-                );
-                if (catObj?.image_url) {
-                  return (
-                    <img
-                      src={catObj.image_url}
-                      alt={selectedCategoryName}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400 shadow-sm bg-white"
-                    />
-                  );
-                } else {
-                  return (
-                    <span className="w-12 h-12 flex items-center justify-center rounded-full bg-muted-foreground/10 text-3xl border-2 border-yellow-400 shadow-sm">
-                      🗂️
-                    </span>
-                  );
-                }
-              })()}
-              <span className="text-xl font-bold text-white truncate">
-                {selectedCategoryName}
-              </span>
-            </div>
+              >
+                <Label
+                  content={renderCenterLabel}
+                  className="fill-foreground text-lg"
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+
+          <Accordion
+            type="multiple"
+            value={expandedSectors}
+            onValueChange={setExpandedSectors}
+            className="w-full"
+          >
+            {breakdownSectors.map((sector) => {
+              const sectorTotal =
+                sectorTotals.find((s) => s.id === sector.id)?.value || 0;
+              const sectorCategories = getCategoryTotalsForSector(sector.id);
+
+              return (
+                <AccordionItem key={sector.id} value={sector.id}>
+                  <AccordionTrigger>
+                    <div className="flex justify-between w-full items-center">
+                      <span
+                        className="hover:underline"
+                        onClick={() =>
+                          handleBreakdownClick("sector", sector.id, sector.name)
+                        }
+                      >
+                        {sector.name}
+                      </span>
+                      <div className="flex items-baseline">
+                        <span className="font-bold">
+                          {showValues ? formatMoney(sectorTotal) : "•••••"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({((sectorTotal / total) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-row flex-wrap gap-4 pt-2 pl-4">
+                      {sectorCategories.map((cat) => (
+                        <div
+                          key={cat.id}
+                          className="flex flex-col items-center gap-2 cursor-pointer text-center w-24 group"
+                          onClick={() =>
+                            handleBreakdownClick("category", cat.id, cat.name)
+                          }
+                        >
+                          <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center overflow-hidden border-2 border-yellow-400 transition-colors">
+                            {cat.image_url ? (
+                              <img
+                                src={cat.image_url}
+                                alt={cat.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-3xl font-bold">
+                                {cat.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs">
+                            <p className="font-semibold truncate">{cat.name}</p>
+                            <p>
+                              {showValues ? formatMoney(cat.value) : "•••••"}
+                            </p>
+                            <p className="text-muted-foreground">
+                              ({((cat.value / sectorTotal) * 100).toFixed(1)}
+                              %)
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </div>
+      </CardContent>
+      <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-gradient-to-b from-[#004D40] to-[#26A69A] border-none text-white [&>button]:text-white">
+          <SheetHeader className="p-4">
+            <SheetTitle>Transactions for {sheetTitle}</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 max-h-[80vh] overflow-y-auto pr-2">
+          <div className="flex-1 overflow-y-auto p-4">
             <TransactionList
-              transactions={transactionsInDateRange.filter(
-                (t) => t.category_id === selectedCategoryId
-              )}
-              deleteTransaction={() => {}}
+              transactions={sheetTransactions}
+              categories={categories}
+              userNames={userNames}
+              deleteTransaction={deleteTransaction}
               showValues={showValues}
+              incomeImageUrl={incomeImageUrl}
+              settlementImageUrl={settlementImageUrl}
+              reimbursementImageUrl={reimbursementImageUrl}
+              handleSetEditingTransaction={handleSetEditingTransaction}
+              allTransactions={allTransactions}
+              variant="dialog"
             />
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </Card>
   );
 };
 
