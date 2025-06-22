@@ -27,7 +27,7 @@ A personal finance tracker for couples, rebuilt with React, Vite, and Supabase. 
 
 ## Deploy Your Own Bank of Quack (No Code Required)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fch-chambers%2FBank-of-Quack-V3&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=You%20need%20to%20get%20these%20from%20your%20Supabase%20project%20API%20settings.&project-name=my-bank-of-quack&repository-name=my-bank-of-quack)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchrischambers888%2FBank-of-Quack&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=You%20need%20to%20get%20these%20from%20your%20Supabase%20project%20API%20settings.&project-name=my-bank-of-quack&repository-name=my-bank-of-quack)
 
 This guide will walk you through deploying your own private version of this application. You'll get your own website link and a private database that only you can access.
 
@@ -67,6 +67,17 @@ This guide will walk you through deploying your own private version of this appl
 ### Step 5: All Done!
 
 Once Vercel has finished (you'll get an email and see it on your Vercel dashboard), you can visit the URL they provide. Log in using the email and password you created in Step 4. Enjoy your private financial tracker!
+
+### Step 6: Go Live! (Trigger Production Deployment)
+
+The first time you set this up, Vercel creates a "preview". To make your site fully live at its main address, you need to make one small change.
+
+1.  Go to the new repository Vercel created for you in your GitHub account. (It should be named something like `my-bank-of-quack`).
+2.  Click on the `README.md` file.
+3.  Click the **pencil icon** (Edit this file) in the top-right corner of the file view.
+4.  You don't have to change anything significant. Just add a space or an emoji at the end of a sentence.
+5.  Scroll to the bottom of the page and click the green **Commit changes...** button.
+6.  That's it! This new commit will automatically tell Vercel to build a "Production" version of your site. After a few minutes, your website will be live at its main URL.
 
 ---
 
