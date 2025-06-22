@@ -25,7 +25,53 @@ A personal finance tracker for couples, rebuilt with React, Vite, and Supabase. 
 - [Lucide React](https://lucide.dev/guide/packages/lucide-react) for icons
 - TypeScript
 
-## Getting Started
+## Deploy Your Own Bank of Quack (No Code Required)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fch-chambers%2FBank-of-Quack-V3&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=You%20need%20to%20get%20these%20from%20your%20Supabase%20project%20API%20settings.&project-name=my-bank-of-quack&repository-name=my-bank-of-quack)
+
+This guide will walk you through deploying your own private version of this application. You'll get your own website link and a private database that only you can access.
+
+### Step 1: Start the Deployment
+
+1.  Click the **Deploy with Vercel** button above.
+2.  You'll be taken to the Vercel website. You may need to create a free account (using GitHub is recommended).
+3.  Vercel will automatically start setting up the project for you. It will ask for two "Environment Variables": `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Leave this browser tab open and proceed to the next step to get these keys.
+
+### Step 2: Set Up Your Private Database (Supabase)
+
+1.  In a new browser tab, go to [Supabase](https://supabase.com/) and sign up for a free account.
+2.  Create a **New Project**. Give it a name you like and create a secure database password (be sure to save it somewhere safe!).
+3.  Once the project is created, navigate to **Project Settings** (the gear icon in the left sidebar).
+4.  Click on **API**. You will see your project's API details.
+5.  Copy the **Project URL**. Go back to your Vercel tab and paste it into the `VITE_SUPABASE_URL` field.
+6.  Copy the **Project API Key** (the one that says `anon` and `public`). Go back to Vercel and paste it into the `VITE_SUPABASE_ANON_KEY` field.
+7.  Now, click **Deploy** on the Vercel page. Vercel will start building your website.
+
+### Step 3: Create Your Database Structure
+
+1.  While Vercel is building, return to your Supabase project tab.
+2.  In the left sidebar, find the **SQL Editor** (it looks like a database cylinder).
+3.  Click on **New query**.
+4.  Scroll down in _this_ README file to the [Database Schema](#4-database-schema-ready-to-import-sql) section.
+5.  Copy the entire block of SQL code provided there.
+6.  Paste the code into the Supabase SQL Editor and click **RUN**. This sets up all the necessary tables for the app.
+
+### Step 4: Create Your App Login
+
+1.  In the Supabase left sidebar, find the **Authentication** page (it looks like a person icon).
+2.  Click the **Create user** button.
+3.  Enter the email and password you want to use to log into your application.
+4.  It's recommended to go to the **Providers** > **Email** section and turn **OFF** "Confirm email" for the simplest setup.
+
+### Step 5: All Done!
+
+Once Vercel has finished (you'll get an email and see it on your Vercel dashboard), you can visit the URL they provide. Log in using the email and password you created in Step 4. Enjoy your private financial tracker!
+
+---
+
+## Manual Developer Setup
+
+For developers who want to run the project locally or contribute to the code.
 
 ### 1. Clone the Repo
 
