@@ -34,24 +34,25 @@ This guide will walk you through deploying your own private version of this appl
 ### Step 1: Start the Deployment
 
 1.  Click the **Deploy with Vercel** button above.
-2.  You'll be taken to the Vercel website. You may need to create a free account (using GitHub is recommended).
-3.  Vercel will automatically start setting up the project for you. It will ask for two "Environment Variables": `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Leave this browser tab open and proceed to the next step to get these keys.
+2.  You'll be taken to the Vercel website. You will need to create a free account (using GitHub is recommended).
+3.  Sign in with your github, authorize vercel whenever asked, then add your own GitHub as the "Git Scope" when you are creating the vercel project. Click Create.
+4.  Vercel will automatically start setting up the project for you. It will ask for two "Environment Variables": `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Leave this browser tab open and proceed to the next step to get these keys.
 
 ### Step 2: Set Up Your Private Database (Supabase)
 
-1.  In a new browser tab, go to [Supabase](https://supabase.com/) and sign up for a free account.
-2.  Create a **New Project**. Give it a name you like and create a secure database password (be sure to save it somewhere safe!).
+1.  In a new browser tab, go to [Supabase](https://supabase.com/) and sign in using your GitHub account.
+2.  Create a **New Organization and New Project**. Use the **free** tier. Give it a name you like and create a secure database password (be sure to save it somewhere safe!). Select "Canada (Central) as the region".
 3.  Once the project is created, navigate to **Project Settings** (the gear icon in the left sidebar).
-4.  Click on **API**. You will see your project's API details.
+4.  Click on ** Data API**. You will see your project's API details.
 5.  Copy the **Project URL**. Go back to your Vercel tab and paste it into the `VITE_SUPABASE_URL` field.
-6.  Copy the **Project API Key** (the one that says `anon` and `public`). Go back to Vercel and paste it into the `VITE_SUPABASE_ANON_KEY` field.
+6.  Go to "API Keys" in the left menu. Copy the **Project API Key** (the one that says `anon` and `public`). Go back to Vercel and paste it into the `VITE_SUPABASE_ANON_KEY` field.
 7.  Now, click **Deploy** on the Vercel page. Vercel will start building your website.
 
 ### Step 3: Create Your Database Structure
 
 1.  While Vercel is building, return to your Supabase project tab.
 2.  In the left sidebar, find the **SQL Editor** (it looks like a database cylinder).
-3.  Click on **New query**.
+3.  Click on **New query**. (or new snippet)
 4.  Scroll down in _this_ README file to the [Database Schema](#4-database-schema-ready-to-import-sql) section.
 5.  Copy the entire block of SQL code provided there.
 6.  Paste the code into the Supabase SQL Editor and click **RUN**. This sets up all the necessary tables for the app.
@@ -102,11 +103,23 @@ VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-### 4. Database Schema (Ready-to-Import SQL)
+### 4. Database Schema (Ready-to-Import-SQL)
 
 Paste the following SQL into the **SQL Editor** in Supabase to create all required tables and relationships:
 
 ```sql
+-- Categories table
+create table if not exists categories (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null
+);
+
+-- Sectors table
+create table if not exists sectors (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null
+);
+
 -- Transactions table
 create table if not exists transactions (
   id uuid primary key default gen_random_uuid(),
@@ -121,18 +134,6 @@ create table if not exists transactions (
   split_type text, -- 'splitEqually', 'user1_only', 'user2_only'
   reimburses_transaction_id uuid references transactions(id) on delete set null,
   created_at timestamptz default now()
-);
-
--- Categories table
-create table if not exists categories (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null
-);
-
--- Sectors table
-create table if not exists sectors (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null
 );
 
 -- Sector-Categories join table
@@ -174,8 +175,8 @@ create policy "Users can manage app settings." on app_settings for all using (au
 -- Add policies to allow users to manage their own avatar images.
 CREATE POLICY "Users can upload avatars" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'avatars' AND auth.uid() IS NOT NULL );
 CREATE POLICY "Users can view all avatars" ON storage.objects FOR SELECT USING ( bucket_id = 'avatars' );
-CREATE POLICY "Users can update their own avatars" ON storage.objects FOR UPDATE using ( auth.uid() = owner_id );
-CREATE POLICY "Users can delete their own avatars" ON storage.objects FOR DELETE using ( auth.uid() = owner_id );
+CREATE POLICY "Users can update their own avatars" ON storage.objects FOR UPDATE using ( auth.uid()::text = owner_id );
+CREATE POLICY "Users can delete their own avatars" ON storage.objects FOR DELETE using ( auth.uid()::text = owner_id );
 ```
 
 ### 5. Run the App
