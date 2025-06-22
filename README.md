@@ -59,8 +59,8 @@ This guide will walk you through deploying your own private version of this appl
 
 ### Step 4: Create Your App Login
 
-1.  In the Supabase left sidebar, find the **Authentication** page (it looks like a person icon).
-2.  Click the **Create user** button.
+1.  In the Supabase left sidebar, find the **Authentication** page.
+2.  Click the **Add new user** button, then "Create new user".
 3.  Enter the email and password you want to use to log into your application.
 4.  It's recommended to go to the **Providers** > **Email** section and turn **OFF** "Confirm email" for the simplest setup.
 
@@ -78,6 +78,17 @@ The first time you set this up, Vercel creates a "preview". To make your site fu
 4.  You don't have to change anything significant. Just add a space or an emoji at the end of a sentence.
 5.  Scroll to the bottom of the page and click the green **Commit changes...** button.
 6.  That's it! This new commit will automatically tell Vercel to build a "Production" version of your site. After a few minutes, your website will be live at its main URL.
+
+---
+
+## How to Get Updates
+
+Your deployed version of this app is a private copy and does not automatically receive updates when the original project is improved. To get the latest features and bug fixes, you can easily sync your repository with the original.
+
+1.  Navigate to your copy of the repository on GitHub.
+2.  You should see a message indicating that your branch is behind the original. Click the **"Sync fork"** button.
+3.  A dialog will appear. Click the green **"Update branch"** button.
+4.  That's it! GitHub will pull in all the new changes from the original repository. Vercel will automatically detect this update and begin a new deployment for you. Within a few minutes, your site will be running the latest version.
 
 ---
 
@@ -119,75 +130,209 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 Paste the following SQL into the **SQL Editor** in Supabase to create all required tables and relationships:
 
 ```sql
--- Categories table
-create table if not exists categories (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null
-);
+-- Create app_settings table
+CREATE TABLE public.app_settings (
+  key text NOT NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  value text NULL,
+  CONSTRAINT app_settings_pkey PRIMARY KEY (key)
+) WITH (OIDS=FALSE);
 
--- Sectors table
-create table if not exists sectors (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null
-);
+-- Create categories table
+CREATE TABLE public.categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  name text NOT NULL,
+  image_url text NULL,
+  CONSTRAINT categories_pkey PRIMARY KEY (id),
+  CONSTRAINT categories_name_key UNIQUE (name)
+) WITH (OIDS=FALSE);
 
--- Transactions table
-create table if not exists transactions (
-  id uuid primary key default gen_random_uuid(),
-  description text not null,
-  amount numeric not null,
-  date date not null,
-  transaction_type text not null, -- 'expense', 'income', 'settlement', 'reimbursement'
-  category_id uuid references categories(id),
-  category_name text,
-  paid_by_user_name text,
-  paid_to_user_name text,
-  split_type text, -- 'splitEqually', 'user1_only', 'user2_only'
-  reimburses_transaction_id uuid references transactions(id) on delete set null,
-  created_at timestamptz default now()
-);
+-- Create sectors table
+CREATE TABLE public.sectors (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT sectors_pkey PRIMARY KEY (id),
+  CONSTRAINT sectors_name_key UNIQUE (name)
+) WITH (OIDS=FALSE);
 
--- Sector-Categories join table
-create table if not exists sector_categories (
-  sector_id uuid references sectors(id) on delete cascade,
-  category_id uuid references categories(id) on delete cascade,
-  primary key (sector_id, category_id)
-);
+-- Create sector_categories table
+CREATE TABLE public.sector_categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sector_id uuid NOT NULL,
+  category_id uuid NOT NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT sector_categories_pkey PRIMARY KEY (id),
+  CONSTRAINT uq_sector_category UNIQUE (sector_id, category_id),
+  CONSTRAINT sector_categories_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  CONSTRAINT sector_categories_sector_id_fkey FOREIGN KEY (sector_id) REFERENCES sectors(id) ON DELETE CASCADE
+) WITH (OIDS=FALSE);
 
--- App settings (for user names, avatars, etc.)
-create table if not exists app_settings (
-  key text primary key,
-  value text
-);
+-- Create transactions table
+CREATE TABLE public.transactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  date date NOT NULL,
+  description text NOT NULL,
+  amount numeric NOT NULL,
+  paid_by_user_name text NOT NULL,
+  split_type text NULL,
+  transaction_type text NOT NULL DEFAULT 'expense'::text,
+  paid_to_user_name text NULL,
+  reimburses_transaction_id uuid NULL,
+  category_id uuid NULL,
+  CONSTRAINT transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT transactions_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+  CONSTRAINT transactions_reimburses_transaction_id_fkey FOREIGN KEY (reimburses_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+) WITH (OIDS=FALSE);
 
--- Enable Row Level Security (RLS)
--- This is a basic setup. You might want to customize rules based on your needs.
-alter table transactions enable row level security;
-create policy "Users can see their own transactions." on transactions for select using (auth.uid() is not null);
-create policy "Users can insert their own transactions." on transactions for insert with check (auth.uid() is not null);
-create policy "Users can update their own transactions." on transactions for update using (auth.uid() is not null);
-create policy "Users can delete their own transactions." on transactions for delete using (auth.uid() is not null);
+-- Create transactions_view
+CREATE VIEW public.transactions_view AS
+SELECT t.id,
+       t.created_at,
+       t.date,
+       t.description,
+       t.amount,
+       t.paid_by_user_name,
+       t.split_type,
+       t.transaction_type,
+       t.paid_to_user_name,
+       t.reimburses_transaction_id,
+       t.category_id,
+       c.name AS category_name
+FROM transactions t
+LEFT JOIN categories c ON t.category_id = c.id;
 
-alter table categories enable row level security;
-create policy "Users can manage categories." on categories for all using (auth.uid() is not null);
+-- Policies for app_settings table
+CREATE POLICY "Allow authenticated users to read app settings"
+ON public.app_settings
+FOR SELECT
+TO authenticated
+USING (true);
 
-alter table sectors enable row level security;
-create policy "Users can manage sectors." on sectors for all using (auth.uid() is not null);
+CREATE POLICY "Allow authenticated users to insert app settings"
+ON public.app_settings
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
 
-alter table sector_categories enable row level security;
-create policy "Users can manage sector-category links." on sector_categories for all using (auth.uid() is not null);
+CREATE POLICY "Allow authenticated users to update app settings"
+ON public.app_settings
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
 
-alter table app_settings enable row level security;
-create policy "Users can manage app settings." on app_settings for all using (auth.uid() is not null);
+CREATE POLICY "Allow authenticated users to delete app settings"
+ON public.app_settings
+FOR DELETE
+TO authenticated
+USING (true);
 
+-- Policies for categories table
+CREATE POLICY "Allow authenticated users to read categories"
+ON public.categories
+FOR SELECT
+TO authenticated
+USING (true);
 
--- Enable storage for avatars (in Supabase Storage, not SQL)
--- Go to Storage in Supabase, create a bucket called 'avatars', and make it public.
--- Add policies to allow users to manage their own avatar images.
-CREATE POLICY "Users can upload avatars" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'avatars' AND auth.uid() IS NOT NULL );
-CREATE POLICY "Users can view all avatars" ON storage.objects FOR SELECT USING ( bucket_id = 'avatars' );
-CREATE POLICY "Users can update their own avatars" ON storage.objects FOR UPDATE using ( auth.uid()::text = owner_id );
-CREATE POLICY "Users can delete their own avatars" ON storage.objects FOR DELETE using ( auth.uid()::text = owner_id );
+CREATE POLICY "Allow authenticated users to insert categories"
+ON public.categories
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update categories"
+ON public.categories
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete categories"
+ON public.categories
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Policies for sectors table
+CREATE POLICY "Allow authenticated users to read sectors"
+ON public.sectors
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert sectors"
+ON public.sectors
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update sectors"
+ON public.sectors
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete sectors"
+ON public.sectors
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Policies for sector_categories table
+CREATE POLICY "Allow authenticated users to read sector_categories"
+ON public.sector_categories
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert sector_categories"
+ON public.sector_categories
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update sector_categories"
+ON public.sector_categories
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete sector_categories"
+ON public.sector_categories
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Policies for transactions table
+CREATE POLICY "Allow authenticated users to read transactions"
+ON public.transactions
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert transactions"
+ON public.transactions
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update transactions"
+ON public.transactions
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete transactions"
+ON public.transactions
+FOR DELETE
+TO authenticated
+USING (true);
 ```
 
 ### 5. Run the App

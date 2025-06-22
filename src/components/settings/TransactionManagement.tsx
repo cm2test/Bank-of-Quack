@@ -46,15 +46,14 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({
   getSplitTypeLabel,
   onImportClick,
 }) => {
-  function arrayToCSV(data: any[]) {
-    if (!data || !data.length) return "";
+  function arrayToCSV(data: any[], headers: string[]) {
+    if (!data || !data.length) return headers.join(",");
     const replacer = (key: string, value: any) =>
       value === null || value === undefined ? "" : value;
-    const header = Object.keys(data[0]);
     const csv = [
-      header.join(","),
+      headers.join(","),
       ...data.map((row) =>
-        header
+        headers
           .map((fieldName) =>
             JSON.stringify(replacer(fieldName, row[fieldName])).replace(
               /\\"/g,
@@ -68,11 +67,6 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({
   }
 
   function handleExportCSV() {
-    if (!transactions || !transactions.length) {
-      alert("No transactions to export.");
-      return;
-    }
-
     const exportedData = transactions.map((t) => {
       const categoryName =
         categories.find((c) => c.id === t.category_id)?.name || "";
@@ -100,7 +94,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({
       return orderedRow;
     });
 
-    const csv = arrayToCSV(orderedData);
+    const csv = arrayToCSV(orderedData, REQUIRED_HEADERS);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
