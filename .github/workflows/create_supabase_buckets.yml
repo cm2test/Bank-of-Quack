@@ -1,0 +1,44 @@
+name: Create Supabase Buckets
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-buckets:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase Project
+        run: supabase link --project-ref $SUPABASE_PROJECT_ID
+
+      - name: Create Storage Buckets
+        run: |
+          BUCKETS=(
+            "avatars"
+            "category-images"
+            "empty-state-images"
+            "income-images"
+            "reimbursement-images"
+            "settlement-images"
+          )
+          for BUCKET_NAME in "${BUCKETS[@]}"; do
+            echo "Checking bucket: $BUCKET_NAME"
+            if ! supabase storage buckets get "$BUCKET_NAME" >/dev/null 2>&1; then
+              echo "Bucket $BUCKET_NAME does not exist. Creating..."
+              supabase storage buckets create "$BUCKET_NAME" --public
+            else
+              echo "Bucket $BUCKET_NAME already exists."
+            fi
+          done
