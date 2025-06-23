@@ -50,37 +50,55 @@ Congratulations, you now have a personal copy of the Bank of Quack project in yo
 
 ### Step 2: Deploy to Vercel
 
-1.  Now that you have your fork, click the **Deploy with Vercel** button below.
-    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
-2.  You'll be taken to the Vercel website. You will need to create a free account (using your GitHub account is recommended).
-3.  You will be asked to **Import a Git Repository**. Find and select your newly forked repository (it should be named `Bank-of-Quack` or similar).
-4.  Vercel will detect the project settings. It will ask for two "Environment Variables": `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Leave this browser tab open and proceed to the next step to get these keys.
+Now we will connect your forked GitHub repository to Vercel to deploy your application.
 
-### Step 3: Set Up Your Private Database (Supabase)
+1.  **Go to Vercel and Import Project:**
 
-1.  In a new browser tab, go to [Supabase](https://supabase.com/) and sign in using your GitHub account.
-2.  Create a **New Organization and New Project**. Use the **free** tier. Give it a name you like and create a secure database password (be sure to save it somewhere safe!). Select "Canada (Central) as the region".
-3.  Once the project is created, navigate to **Project Settings** (the gear icon in the left sidebar).
-4.  Click on ** Data API**. You will see your project's API details.
-5.  Copy the **Project URL**. Go back to your Vercel tab and paste it into the `VITE_SUPABASE_URL` field.
-6.  Go to "API Keys" in the left menu. Copy the **Project API Key** (the one that says `anon` and `public`). Go back to Vercel and paste it into the `VITE_SUPABASE_ANON_KEY` field.
-7.  Now, click **Deploy** on the Vercel page. Vercel will start building your website.
+    - Go to your Vercel dashboard: [vercel.com/dashboard](https://vercel.com/dashboard).
+    - Click the **Add New...** button and select **Project**.
+    - In the "Import Git Repository" section, find your forked `Bank-of-Quack` repository and click the **Import** button next to it.
+
+2.  **Configure the Project:**
+    - Vercel will automatically detect that this is a Vite project. You do not need to change any Build & Output Settings.
+    - Find and expand the **Environment Variables** section. This is where you will securely add your database keys.
+
+### Step 3: Set Up Supabase & Get Keys
+
+You need two keys from your Supabase project to connect it to your Vercel app. Let's get those now.
+
+1.  **Create Supabase Project:**
+
+    - In a new browser tab, go to [Supabase](https://supabase.com/) and sign in.
+    - Create a **New Project**. Use the **free** tier. Give it a name you like and create a secure database password (save it somewhere safe!).
+
+2.  **Get Supabase Keys:**
+
+    - Once the project is created, navigate to **Project Settings** (the gear icon in the left sidebar).
+    - Click on **Data API** in the settings menu.
+    - Under "Project API Keys", find the **Project URL**. Copy it.
+    - Go back to your Vercel tab. In the Environment Variables section, add a new variable. The `Name` is `VITE_SUPABASE_URL` and the `Value` is the URL you just copied.
+    - Go back to the Supabase tab, then in the left go to "API Keys". Copy the **Project API Key** (the one that says `anon` and `public`).
+    - Return to Vercel. Add a second environment variable. The `Name` is `VITE_SUPABASE_ANON_KEY` and the `Value` is the key you just copied.
+
+3.  **Deploy:**
+    - With the environment variables added, click the **Deploy** button on Vercel.
+    - Vercel will now start building and deploying your application. You can leave this page and wait for it to finish.
 
 ### Step 4: Create Your Database Structure
 
-1.  While Vercel is building, return to your Supabase project tab.
-2.  In the left sidebar, find the **SQL Editor** (it looks like a database cylinder).
-3.  Click on **New query**. (or new snippet)
-4.  Scroll down in _this_ README file to the [Database Schema](#4-database-schema-ready-to-import-sql) section.
-5.  Copy the entire block of SQL code provided there.
-6.  Paste the code into the Supabase SQL Editor and click **RUN**. This sets up all the necessary tables for the app.
+1.  - While Vercel is building, return to your Supabase project tab.
+2.  - In the left sidebar, find the **SQL Editor** (it looks like a database cylinder).
+3.  - Click on **New query**.
+4.  - Scroll down in _this_ README file to the [Database Schema](#database-schema-ready-to-import-sql) section.
+5.  - Copy the entire block of SQL code provided there.
+6.  - Paste the code into the Supabase SQL Editor and click **RUN**. This sets up all the necessary tables for the app.
 
 ### Step 5: Create Your App Login
 
-1.  In the Supabase left sidebar, find the **Authentication** page.
-2.  Click the **Add new user** button, then "Create new user".
-3.  Enter the email and password you want to use to log into your application.
-4.  It's recommended to go to the **Providers** > **Email** section and turn **OFF** "Confirm email" for the simplest setup.
+1.  - In the Supabase left sidebar, find the **Authentication** page.
+2.  - Click the **Add user** button.
+3.  - Enter the email and password you want to use to log into your application.
+4.  - For the simplest setup, it's recommended to go to the **Providers** > **Email** section and turn **OFF** "Confirm email".
 
 ### Step 6: All Done!
 
@@ -90,7 +108,7 @@ Once Vercel has finished (you'll get an email and see it on your Vercel dashboar
 
 ## How to Get Updates
 
-Your deployed version of this app is a private copy and does not automatically receive updates when the original project is improved. To get the latest features and bug fixes, you can easily sync your repository with the original.
+Your deployed version of this app is a private copy and does not automatically receive updates when the original project is improved. Because you forked the repository, you can easily get the latest features and bug fixes.
 
 1.  Navigate to your copy of the repository on GitHub.
 2.  You should see a message indicating that your branch is behind the original. Click the **"Sync fork"** button.
