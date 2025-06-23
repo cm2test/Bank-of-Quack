@@ -2,9 +2,13 @@
 // src/supabaseClient.ts
 import { createClient } from "@supabase/supabase-js";
 
-// Get Supabase URL and anon key from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Look for VITE_* first (local dev) –
+// fall back to the plain names that the Vercel × Supabase integration injects.
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
 
-// Create and export the Supabase client
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
