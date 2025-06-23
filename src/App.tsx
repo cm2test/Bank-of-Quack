@@ -13,7 +13,6 @@ import { Menu } from "lucide-react";
 import { useAppData } from "./hooks/useAppData";
 import MobileMenu from "./components/ui/MobileMenu";
 import DuckFabNav from "./components/dashboard/DuckFabNav";
-import { createStorageBuckets } from "./lib/supabaseUtils";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -35,7 +34,6 @@ const App: React.FC = () => {
   const handleSetEditingTransaction = (t: any) => setEditingTransaction(t);
 
   useEffect(() => {
-    createStorageBuckets();
     const checkAuth = async () => {
       const {
         data: { session },

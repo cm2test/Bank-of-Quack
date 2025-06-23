@@ -71,20 +71,51 @@ You need two keys from your Supabase project to connect it to your Vercel app. L
     - In a new browser tab, go to [Supabase](https://supabase.com/) and sign in.
     - Create a **New Project**. Use the **free** tier. Give it a name you like and create a secure database password (save it somewhere safe!).
 
-2.  **Get Supabase Keys:**
+2.  **Get Supabase Keys for Vercel:**
 
     - Once the project is created, navigate to **Project Settings** (the gear icon in the left sidebar).
-    - Click on **Data API** in the settings menu.
+    - Click on **API** in the settings menu.
     - Under "Project API Keys", find the **Project URL**. Copy it.
     - Go back to your Vercel tab. In the Environment Variables section, add a new variable. The `Name` is `VITE_SUPABASE_URL` and the `Value` is the URL you just copied.
-    - Go back to the Supabase tab, then in the left go to "API Keys". Copy the **Project API Key** (the one that says `anon` and `public`).
+    - Go back to the Supabase tab. Still on the **API** page, copy the **Project API Key** (the one that says `anon` and `public`).
     - Return to Vercel. Add a second environment variable. The `Name` is `VITE_SUPABASE_ANON_KEY` and the `Value` is the key you just copied.
 
-3.  **Deploy:**
+3.  **Deploy on Vercel:**
     - With the environment variables added, click the **Deploy** button on Vercel.
     - Vercel will now start building and deploying your application. You can leave this page and wait for it to finish.
 
-### Step 4: Create Your Database Structure
+### Step 4: Automate Image Upload Setup (GitHub Secrets)
+
+To enable image uploads for avatars and categories, the app uses a helper function in Supabase. A GitHub Action is included in this repository to automatically deploy this function for you. To allow it to run, you must provide it with secure access to your Supabase project.
+
+1.  **Generate a Supabase Access Token:**
+
+    - In a new browser tab, go to [app.supabase.com/account/tokens](https://app.supabase.com/account/tokens).
+    - Click **Generate New Token**.
+    - Give it a name (e.g., "Bank of Quack Deploy") and click **Generate token**.
+    - **Important:** Copy the token immediately and save it somewhere secure. You will not be able to see it again.
+
+2.  **Get Your Supabase Project ID:**
+
+    - Go to your Supabase project dashboard.
+    - Navigate to **Project Settings** (gear icon) > **General**.
+    - Find your **Project ID** and copy it.
+
+3.  **Add Secrets to Your GitHub Repository:**
+    - Go to the forked repository on your GitHub account.
+    - Click the **Settings** tab.
+    - In the left sidebar, navigate to **Secrets and variables** > **Actions**.
+    - Click the **New repository secret** button.
+    - Create the first secret:
+      - Name: `SUPABASE_ACCESS_TOKEN`
+      - Secret: Paste the Access Token you generated.
+    - Click **Add secret**.
+    - Create the second secret:
+      - Name: `SUPABASE_PROJECT_ID`
+      - Secret: Paste the Project ID you copied.
+    - Click **Add secret**.
+
+### Step 5: Create Your Database Structure
 
 1.  - While Vercel is building, return to your Supabase project tab.
 2.  - In the left sidebar, find the **SQL Editor** (it looks like a database cylinder).
@@ -93,16 +124,32 @@ You need two keys from your Supabase project to connect it to your Vercel app. L
 5.  - Copy the entire block of SQL code provided there.
 6.  - Paste the code into the Supabase SQL Editor and click **RUN**. This sets up all the necessary tables for the app.
 
-### Step 5: Create Your App Login
+### Step 6: Create Your App Login
 
 1.  - In the Supabase left sidebar, find the **Authentication** page.
 2.  - Click the **Add user** button.
 3.  - Enter the email and password you want to use to log into your application.
 4.  - For the simplest setup, it's recommended to go to the **Providers** > **Email** section and turn **OFF** "Confirm email".
 
-### Step 6: All Done!
+### Step 7: Trigger the Final Deployment
 
-Once Vercel has finished (you'll get an email and see it on your Vercel dashboard), you can visit the URL they provide. Log in using the email and password you created in Step 5. Enjoy your private financial tracker!
+To finalize the setup, you need to trigger the GitHub Action we just configured. The easiest way to do this is to make a small, insignificant change to your repository.
+
+1.  In your forked GitHub repository, click on the `README.md` file.
+2.  Click the pencil icon to edit the file.
+3.  Make any small change, like adding a space or an emoji at the end.
+4.  Scroll down and click **Commit changes...**.
+
+This commit will do two things:
+
+- It will trigger Vercel to create a new, updated "Production" deployment.
+- It will trigger the GitHub Action to run, which will deploy the `create-buckets` function to Supabase.
+
+You can view the progress of the action in your repository's **Actions** tab. Once it completes successfully, your application is fully configured!
+
+### Step 8: All Done!
+
+Once Vercel has finished its final deployment, you can visit the URL they provide. Log in using the email and password you created in Step 6. Enjoy your private financial tracker!
 
 ---
 
