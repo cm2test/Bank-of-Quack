@@ -84,9 +84,9 @@ You need two keys from your Supabase project to connect it to your Vercel app. L
     - With the environment variables added, click the **Deploy** button on Vercel.
     - Vercel will now start building and deploying your application. You can leave this page and wait for it to finish.
 
-### Step 4: Automate Image Upload Setup (GitHub Secrets)
+### Step 4: Automate Storage Bucket Setup (GitHub Secrets)
 
-To enable image uploads for avatars and categories, the app uses a helper function in Supabase. A GitHub Action is included in this repository to automatically deploy this function for you. To allow it to run, you must provide it with secure access to your Supabase project.
+To enable image uploads for avatars and categories, the app requires several storage "buckets" in your Supabase project. A GitHub Action is included in this repository to automatically create these buckets for you. To allow it to run, you must provide it with secure access to your Supabase project.
 
 1.  **Generate a Supabase Access Token:**
 
@@ -143,7 +143,7 @@ To finalize the setup, you need to trigger the GitHub Action we just configured.
 This commit will do two things:
 
 - It will trigger Vercel to create a new, updated "Production" deployment.
-- It will trigger the GitHub Action to run, which will deploy the `create-buckets` function to Supabase.
+- It will trigger the GitHub Action to run, which will create the necessary storage buckets in your Supabase project.
 
 You can view the progress of the action in your repository's **Actions** tab. Once it completes successfully, your application is fully configured!
 

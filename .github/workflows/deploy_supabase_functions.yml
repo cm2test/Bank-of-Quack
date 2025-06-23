@@ -1,4 +1,4 @@
-name: Deploy Supabase Functions
+name: Create Supabase Buckets
 
 on:
   push:
@@ -6,8 +6,11 @@ on:
       - main
 
 jobs:
-  deploy:
+  create-buckets:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -17,10 +20,25 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy Supabase functions
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      - name: Link Supabase Project
+        run: supabase link --project-ref $SUPABASE_PROJECT_ID
+
+      - name: Create Storage Buckets
         run: |
-          supabase link --project-ref $SUPABASE_PROJECT_ID
-          supabase functions deploy --project-ref $SUPABASE_PROJECT_ID
+          BUCKETS=(
+            "avatars"
+            "category-images"
+            "empty-state-images"
+            "income-images"
+            "reimbursement-images"
+            "settlement-images"
+          )
+          for BUCKET_NAME in "${BUCKETS[@]}"; do
+            echo "Checking bucket: $BUCKET_NAME"
+            if ! supabase storage buckets get "$BUCKET_NAME" >/dev/null 2>&1; then
+              echo "Bucket $BUCKET_NAME does not exist. Creating..."
+              supabase storage buckets create "$BUCKET_NAME" --public
+            else
+              echo "Bucket $BUCKET_NAME already exists."
+            fi
+          done
