@@ -333,6 +333,9 @@ ON public.transactions
 FOR DELETE
 TO authenticated
 USING (true);
+
+INSERT INTO public.app_settings (key, value) VALUES ('user1_name', 'User 1');
+INSERT INTO public.app_settings (key, value) VALUES ('user2_name', 'User 2');
 ```
 
 ### 5. Run the App
