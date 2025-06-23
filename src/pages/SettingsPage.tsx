@@ -61,6 +61,7 @@ const SettingsPage = () => {
     string | null
   >(null);
   const [isImportDialogOpen, setImportDialogOpen] = useState(false);
+  const [isFabOpen, setFabOpen] = useState(false);
 
   const {
     userNames,
@@ -235,7 +236,7 @@ const SettingsPage = () => {
         />
       </div>
 
-      <DuckFabNav />
+      <DuckFabNav open={isFabOpen} setOpen={setFabOpen} />
 
       <ImportDialog
         isOpen={isImportDialogOpen}
