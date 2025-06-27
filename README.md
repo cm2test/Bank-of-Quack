@@ -29,15 +29,15 @@ Track shared expenses, reimbursements and income, see live balances, and keep ev
 
 ## 🚀 One-click deploy (zero coding)
 
-> Creates a private Supabase project, injects all keys into Vercel, applies the DB schema & storage buckets automatically.  
-> Total time: ± 60 seconds.
+> **Recommended:** Fork this repo first for easier updates later!<br>
+> The Deploy button will prompt you for your Supabase project URL and anon/public key.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chrischambers888/bank-of-quack&project-name=bank-of-quack&repository-name=bank-of-quack&stores=[{%22type%22:%22integration%22,%22integrationSlug%22:%22supabase%22,%22productSlug%22:%22supabase%22}])
+[![Deploy with Vercel](https://vercel.com/button)](<https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchrischambers888%2Fbank-of-quack&project-name=bank-of-quack&repository-name=bank-of-quack&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=Enter%20your%20Supabase%20project%20URL%20and%20anon%20(public)%20key%20from%20your%20Supabase%20project%20settings.>)
 
-1. Click **Deploy with Vercel**.
-2. Pick (or create) a GitHub account → _Vercel forks the repo for you._
-3. Pick **Create new Supabase project** → _Vercel installs the official Supabase Integration._
-4. Choose project name & region → **Done.**
+1. **Fork this repo** to your own GitHub account (click the Fork button at the top right).
+2. Click the **Deploy with Vercel** button above.
+3. When prompted, enter your Supabase project URL and anon/public key (find these in your Supabase project settings under API).
+4. Choose a project name & region, then deploy.
 
 The first build:
 
@@ -45,8 +45,7 @@ The first build:
 - creates the six Storage buckets + RLS policies
 - creates all tables / views / seed rows in `supabase/migrations/`
 
-Open the deployment URL, sign up with any email/password, and start tracking.  
-_No copy-pasting keys, no GitHub secrets, no SQL console._
+Open the deployment URL, sign up with any email/password, and start tracking.
 
 ---
 
@@ -74,7 +73,7 @@ Install Docker and run supabase start; the CLI spins up Postgres + Studio and re
 
 ## 🔄 Keeping your copy up-to-date
 
-### Easiest: GitHub’s **Sync fork** button
+### Easiest: GitHub's **Sync fork** button
 
 Open your repo on GitHub → click **Sync fork → Update branch**.  
 Vercel sees the push and deploys the new version automatically.
