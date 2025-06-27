@@ -38,7 +38,7 @@ create table if not exists public.transactions (
   date        date not null,
   description text not null,
   amount      numeric not null,
-  paid_by_user_name text not null,
+  paid_by_user_name text,
   split_type  text,
   transaction_type text not null default 'expense',
   paid_to_user_name text,

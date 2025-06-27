@@ -117,9 +117,9 @@ export const useTransactionFilters = (
         }
         case "income":
         case "reimbursement": {
-          const receivedByUser1 = t.paid_by_user_name === userNames[0];
-          const receivedByUser2 = t.paid_by_user_name === userNames[1];
-          const receivedByShared = t.paid_by_user_name === "Shared";
+          const receivedByUser1 = t.paid_to_user_name === userNames[0];
+          const receivedByUser2 = t.paid_to_user_name === userNames[1];
+          const receivedByShared = t.paid_to_user_name === "Shared";
 
           if (personInvolvementFilter.user1 && receivedByUser1) return true;
           if (personInvolvementFilter.user2 && receivedByUser2) return true;

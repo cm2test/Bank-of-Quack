@@ -307,7 +307,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         )}
                         {(type === "income" || type === "reimbursement") && (
                           <div>
-                            <strong>Received By:</strong> {t.paid_by_user_name}
+                            <strong>Received By:</strong> {t.paid_to_user_name}
                           </div>
                         )}
                         {type === "reimbursement" &&

@@ -230,7 +230,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       date: getLocalDateString(date),
       description,
       amount: parseFloat(amount),
-      paid_by_user_name: paidOrReceivedBy,
+      paid_by_user_name: null,
       category_id: null,
       split_type: null,
       paid_to_user_name: null,
@@ -253,11 +253,21 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         ...transactionDataPayload,
         category_id: selectedCategoryId,
         split_type: splitType,
+        paid_by_user_name: paidOrReceivedBy,
       };
     } else if (transactionType === "settlement") {
       transactionDataPayload = {
         ...transactionDataPayload,
+        paid_by_user_name: paidOrReceivedBy,
         paid_to_user_name: paidToUserName,
+      };
+    } else if (
+      transactionType === "income" ||
+      transactionType === "reimbursement"
+    ) {
+      transactionDataPayload = {
+        ...transactionDataPayload,
+        paid_to_user_name: paidOrReceivedBy,
       };
     }
 

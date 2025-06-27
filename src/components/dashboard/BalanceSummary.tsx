@@ -30,46 +30,95 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
       return { balanceSummary: 0, calculationSteps: [] };
     }
 
-    const effectiveBalanceTransactions: Transaction[] = [...transactions];
+    // Exclude reimbursements that reimburse another transaction from the main list
+    const effectiveBalanceTransactions: Transaction[] = [
+      ...transactions.filter(
+        (t) =>
+          t.transaction_type !== "reimbursement" || !t.reimburses_transaction_id
+      ),
+    ];
     const reimbursements = transactions.filter(
       (t) =>
         t.transaction_type === "reimbursement" && t.reimburses_transaction_id
     );
 
     reimbursements.forEach((reimbursement) => {
+      console.log("Processing reimbursement:", reimbursement);
       const originalExpense = allTransactions.find(
         (t) => t.id === reimbursement.reimburses_transaction_id
       );
-      if (originalExpense && originalExpense.split_type) {
+      if (!originalExpense) {
+        console.warn(
+          "Original expense not found for reimbursement:",
+          reimbursement.id,
+          "reimburses_transaction_id:",
+          reimbursement.reimburses_transaction_id
+        );
+      } else if (!originalExpense.split_type) {
+        console.warn(
+          "Original expense found but missing split_type:",
+          originalExpense
+        );
+      } else {
+        // The reimburser is the user who is NOT the original payer
+        const [user1, user2] = userNames;
+        let reimburser = user1;
+        if (originalExpense.paid_by_user_name === user1) {
+          reimburser = user2;
+        } else {
+          reimburser = user1;
+        }
         const virtualNegativeExpense: Transaction = {
           ...reimbursement,
           id: `${reimbursement.id}-virtual`,
           transaction_type: "expense",
           amount: -reimbursement.amount,
           split_type: originalExpense.split_type,
-          paid_by_user_name: reimbursement.paid_by_user_name,
+          paid_by_user_name: reimbursement.paid_to_user_name,
+          paid_to_user_name: null,
+          category_id: originalExpense.category_id,
+          category_name: originalExpense.category_name,
           description: `(Reimbursement for: ${originalExpense.description})`,
         };
+        console.log(
+          "Created virtual negative expense:",
+          virtualNegativeExpense
+        );
         effectiveBalanceTransactions.push(virtualNegativeExpense);
       }
     });
 
+    console.log(
+      "Effective balance transactions:",
+      effectiveBalanceTransactions
+    );
+    // Filter out income transactions and pure reimbursements (those without reimburses_transaction_id)
+    const filteredTransactions = effectiveBalanceTransactions.filter((t) => {
+      if (t.transaction_type === "income") return false;
+      if (
+        t.transaction_type === "reimbursement" &&
+        !t.reimburses_transaction_id
+      )
+        return false;
+      return true;
+    });
+    console.log("Filtered transactions:", filteredTransactions);
+
+    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+      const dateA = parseInputDateLocal(a.date);
+      const dateB = parseInputDateLocal(b.date);
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA.getTime() - dateB.getTime();
+      }
+      const createdAtA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdAtB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdAtA - createdAtB;
+    });
+    console.log("Sorted transactions:", sortedTransactions);
+
     const [user1, user2] = userNames;
     let netBalanceUser1OwesUser2 = 0;
     const steps: any[] = [];
-
-    const sortedTransactions = [...effectiveBalanceTransactions].sort(
-      (a, b) => {
-        const dateA = parseInputDateLocal(a.date);
-        const dateB = parseInputDateLocal(b.date);
-        if (dateA.getTime() !== dateB.getTime()) {
-          return dateA.getTime() - dateB.getTime();
-        }
-        const createdAtA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const createdAtB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return createdAtA - createdAtB;
-      }
-    );
 
     sortedTransactions.forEach((t) => {
       const amount = t.amount;
@@ -88,6 +137,10 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           } else if (t.split_type === "user2_only") {
             change = -amount;
             explanation = `${user1} paid for something used only by ${user2}.`;
+          } else if (t.split_type === "user1_only" && amount < 0) {
+            // Negative expense: user2 reimbursed user1 for user1_only
+            change = -amount;
+            explanation = `${user1} was reimbursed for something used only by ${user1}.`;
           }
         } else if (t.paid_by_user_name === user2) {
           if (t.split_type === "splitEqually") {
@@ -96,6 +149,10 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           } else if (t.split_type === "user1_only") {
             change = amount;
             explanation = `${user2} paid for something used only by ${user1}.`;
+          } else if (t.split_type === "user2_only" && amount < 0) {
+            // Negative expense: user1 reimbursed user2 for user2_only
+            change = amount;
+            explanation = `${user2} was reimbursed for something used only by ${user2}.`;
           }
         }
       } else if (type === "settlement") {
@@ -108,6 +165,14 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
         ) {
           change = amount;
           explanation = `Settlement paid from ${user2} to ${user1}.`;
+        }
+      } else if (type === "income" || type === "reimbursement") {
+        if (t.paid_to_user_name === user1) {
+          change = amount;
+          explanation = `${user1} received ${type}.`;
+        } else if (t.paid_to_user_name === user2) {
+          change = -amount;
+          explanation = `${user2} received ${type}.`;
         }
       }
 
@@ -122,6 +187,7 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
         netBalanceUser1OwesUser2 = newBalance;
       }
     });
+    console.log("Final calculationSteps:", steps);
     return {
       balanceSummary: netBalanceUser1OwesUser2,
       calculationSteps: steps,
@@ -158,6 +224,19 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
       paid_to_user_name,
       split_type,
     } = transaction;
+
+    if (transaction_type === "income" || transaction_type === "reimbursement") {
+      if (!paid_to_user_name) return null;
+      const receiverName = paid_to_user_name;
+      const receiverAvatar =
+        receiverName === user1 ? user1AvatarUrl : user2AvatarUrl;
+      return (
+        <>
+          <UserBadge name={receiverName} avatarUrl={receiverAvatar} />
+          <span className="text-xs">received</span>
+        </>
+      );
+    }
 
     if (!paid_by_user_name) return null;
 

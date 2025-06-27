@@ -157,6 +157,13 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       return acc;
     }, {} as Record<string, any>);
 
+    if (
+      mappedData.transaction_type === "income" ||
+      mappedData.transaction_type === "reimbursement"
+    ) {
+      mappedData.paid_to_user_name = row["Paid to"];
+      mappedData.paid_by_user_name = "";
+    }
     return mappedData;
   };
 
@@ -209,19 +216,32 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       issues.Type =
         "Must be one of: expense, income, settlement, reimbursement";
     }
-    if (!row["Paid By"]) {
-      issues["Paid By"] = "Required";
-    } else if (row.Type?.toLowerCase() === "expense") {
-      if (
-        userNames &&
-        !userNames.includes(row["Paid By"]) &&
-        row["Paid By"] !== "Shared"
-      ) {
-        issues["Paid By"] = 'Must be a valid user or "Shared"';
+
+    if (
+      row.Type?.toLowerCase() === "income" ||
+      row.Type?.toLowerCase() === "reimbursement"
+    ) {
+      if (!row["Paid to"]) {
+        issues["Paid to"] = "Required for income and reimbursement";
+      }
+      if (row["Paid By"]) {
+        issues["Paid By"] = "Must be empty for income and reimbursement";
       }
     } else {
-      if (userNames && !userNames.includes(row["Paid By"])) {
-        issues["Paid By"] = "Not a valid user";
+      if (!row["Paid By"]) {
+        issues["Paid By"] = "Required";
+      } else if (row.Type?.toLowerCase() === "expense") {
+        if (
+          userNames &&
+          !userNames.includes(row["Paid By"]) &&
+          row["Paid By"] !== "Shared"
+        ) {
+          issues["Paid By"] = 'Must be a valid user or "Shared"';
+        }
+      } else {
+        if (userNames && !userNames.includes(row["Paid By"])) {
+          issues["Paid By"] = "Not a valid user";
+        }
       }
     }
 
@@ -274,12 +294,6 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       if (row["Split Type"]) {
         issues["Split Type"] = "Must be empty for income";
       }
-      if (row["Paid to"]) {
-        issues["Paid to"] = "Must be empty for income";
-      }
-      if (!row["Paid By"]) {
-        issues["Paid By"] = "Required (who received the income)";
-      }
     }
 
     if (row.Type?.toLowerCase() === "reimbursement") {
@@ -288,9 +302,6 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       }
       if (row["Split Type"]) {
         issues["Split Type"] = "Must be empty for reimbursement";
-      }
-      if (row["Paid to"]) {
-        issues["Paid to"] = "Must be empty for reimbursement";
       }
       if (row["Reimburses Transaction ID"]) {
         const reimbursedTx = transactions.find(
