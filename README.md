@@ -1,4 +1,4 @@
-# Bank of Quack V3 — two-person finance tracker
+# Bank of Quack — two-person finance tracker
 
 A lightweight money tracker for couples built with **React + Vite** on a **Supabase** backend and styled with **shadcn/ui**.  
 Track shared expenses, reimbursements and income, see live balances, and keep everything fair-and-square.
@@ -27,49 +27,85 @@ Track shared expenses, reimbursements and income, see live balances, and keep ev
 
 ---
 
-## 🚀 One-click deploy (zero coding)
+## 🚀 Deployment
 
-> **Recommended:** Fork this repo first for easier updates later!<br>
+**Before you start:**
+
+1. **Create a GitHub account** (if you don't have one already).
+2. **Sign up for Vercel** and **Supabase** using your GitHub account.
+3. **Create a new Supabase project** in your Supabase dashboard.
+4. In your Supabase project, go to **Settings → Data API** and copy:
+   - `Project URL` (for `VITE_SUPABASE_URL`)
+   - `Then in the left section go to "API Keys" and find:`
+   - --> `anon/public API key` (for `VITE_SUPABASE_ANON_KEY`)
+5. **Fork this repo** to your own GitHub account (click the Fork button at the top right).
+
 > The Deploy button will prompt you for your Supabase project URL and anon/public key.
 
-[![Deploy with Vercel](https://vercel.com/button)](<https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchrischambers888%2Fbank-of-quack&project-name=bank-of-quack&repository-name=bank-of-quack&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=Enter%20your%20Supabase%20project%20URL%20and%20anon%20(public)%20key%20from%20your%20Supabase%20project%20settings.>)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new>)
 
-1. **Fork this repo** to your own GitHub account (click the Fork button at the top right).
-2. Click the **Deploy with Vercel** button above.
-3. When prompted, enter your Supabase project URL and anon/public key (find these in your Supabase project settings under API).
-4. Choose a project name & region, then deploy.
+6. Click the **Deploy with Vercel** button above.
+7. Choose "Bank of Quack"
+8. Before deploying **\*you must**, enter your Supabase project URL and anon/public key (from step 4) in the "Enviornment Settings" section.
 
-The first build:
+### 🛠️ After deploying: Apply the database schema (run migrations)
 
-- runs `supabase db push`
-- creates the six Storage buckets + RLS policies
-- creates all tables / views / seed rows in `supabase/migrations/`
+To finish setup, you need to apply the database schema and create storage buckets in your Supabase project. This is easiest and most reliable using the Supabase CLI.
 
-Open the deployment URL, sign up with any email/password, and start tracking.
+#### **Option 1: Manual setup**
+
+- Run the SQL from the "init_schema.sql" file in the Supabase SQL Editor
+
+#### **Option 2: Use the Supabase CLI (recommended, works for all migrations)**
+
+1. **Install Node.js and npm**
+
+   - Go to [nodejs.org](https://nodejs.org/) and download the LTS version for your operating system.
+   - Install it (this gives you both `node` and `npm`).
+
+2. **Install the Supabase CLI**
+
+   ```bash
+   npm install -g supabase
+   ```
+
+3. **Log in to Supabase**
+
+   ```bash
+   supabase login
+   ```
+
+   - This will open a browser window to authenticate.
+
+4. **Link the CLI to your project**
+   In your project folder (where you cloned/forked the repo):
+
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   ```
+
+   - You can find your project ref (id) in the Supabase dashboard URL or in Project Settings → General.
+
+5. **Run the migrations**
+   ```bash
+   supabase db push
+   ```
+   - This will apply all migrations, including creating storage buckets and policies.
+
+### 👤 Create your first user and log in
+
+After applying the migrations, you need to create your first user account in Supabase so you can log in to the app.
+
+1. **Go to your Supabase dashboard.**
+2. In the left sidebar, click **Auth**.
+3. Click **Users**.
+4. Click **Add User**.
+5. Enter an email and password for your first user (this will be your login for the app).
+6. Click **Create User**.
+
+Now, go to your deployed app URL and log in with the email and password you just created. You're ready to go!
 
 ---
-
-## 🧑‍💻 Local developer setup
-
-```bash
-# 1 clone the fork (created by the Deploy button)
-git clone https://github.com/<you>/bank-of-quack.git
-cd bank-of-quack
-
-# 2 install deps
-npm install
-
-# 3 pull env vars from Vercel
-npm i -g vercel
-vercel env pull .env.local
-
-# 4 run
-npm run dev
-# → http://localhost:5173
-```
-
-Need a local database too?
-Install Docker and run supabase start; the CLI spins up Postgres + Studio and re-applies the migrations.
 
 ## 🔄 Keeping your copy up-to-date
 

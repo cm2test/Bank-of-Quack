@@ -1,4 +1,4 @@
--- 20250624124500_init_schema.sql
+-- 20240624_placeholder.sql
 -- Initial application schema: tables, view, policies, seed rows
 ---------------------------------------------------------------
 
@@ -49,7 +49,8 @@ create table if not exists public.transactions (
 --------------------
 --  VIEW
 --------------------
-create view if not exists public.transactions_view as
+drop view if exists public.transactions_view;
+create view public.transactions_view as
 select t.id,
        t.created_at,
        t.date,
@@ -119,3 +120,58 @@ on conflict (key) do nothing;
 insert into public.app_settings (key, value)
 values ('user2_name', 'User 2')
 on conflict (key) do nothing;
+
+--------------------
+--  BUCKETS
+--------------------
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('avatars',              'avatars',              true),
+  ('category-images',      'category-images',      true),
+  ('empty-state-images',   'empty-state-images',   true),
+  ('income-images',        'income-images',        true),
+  ('reimbursement-images', 'reimbursement-images', true),
+  ('settlement-images',    'settlement-images',    true)
+ON CONFLICT (id) DO NOTHING;   -- safe if someone re-applies the migration
+
+------------------------------------------------------------
+-- 2. Clean up: drop policies with the same names if they exist
+------------------------------------------------------------
+DROP POLICY IF EXISTS authenticated_can_read   ON storage.objects;
+DROP POLICY IF EXISTS authenticated_can_insert ON storage.objects;
+DROP POLICY IF EXISTS authenticated_can_update ON storage.objects;
+DROP POLICY IF EXISTS authenticated_can_delete ON storage.objects;
+
+------------------------------------------------------------
+-- 3. Authenticated users can READ (download / list)
+------------------------------------------------------------
+CREATE POLICY authenticated_can_read
+  ON storage.objects
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL);   -- anon = NULL → blocked
+
+------------------------------------------------------------
+-- 4. Authenticated users can CREATE objects
+------------------------------------------------------------
+CREATE POLICY authenticated_can_insert
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+------------------------------------------------------------
+-- 5. Authenticated users can EDIT existing objects
+------------------------------------------------------------
+CREATE POLICY authenticated_can_update
+  ON storage.objects
+  FOR UPDATE
+  USING     (auth.uid() IS NOT NULL)   -- who may run UPDATE
+  WITH CHECK(auth.uid() IS NOT NULL);  -- NEW row must also satisfy
+
+------------------------------------------------------------
+-- 6. Authenticated users can DELETE objects
+------------------------------------------------------------
+CREATE POLICY authenticated_can_delete
+  ON storage.objects
+  FOR DELETE
+  USING (auth.uid() IS NOT NULL);
