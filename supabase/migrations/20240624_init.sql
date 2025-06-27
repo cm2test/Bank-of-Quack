@@ -1,5 +1,5 @@
--- 20240624_placeholder.sql
--- Initial application schema: tables, view, policies, seed rows
+-- 20240624_init.sql
+-- Initial application schema: tables, view, policies, seed rows, buckets
 ---------------------------------------------------------------
 
 --------------------
