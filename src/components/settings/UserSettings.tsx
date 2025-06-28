@@ -4,6 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/supabaseClient";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 interface UserSettingsProps {
   userNames: string[];
@@ -27,6 +38,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({
   const [user1Image, setUser1Image] = useState<string | null>(null);
   const [user2Image, setUser2Image] = useState<string | null>(null);
   const [uploadingUser, setUploadingUser] = useState<1 | 2 | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [pendingSaveEvent, setPendingSaveEvent] =
+    useState<FormEvent<HTMLFormElement> | null>(null);
 
   useEffect(() => {
     if (userNames && userNames.length >= 2) {
@@ -37,12 +51,19 @@ const UserSettings: React.FC<UserSettingsProps> = ({
 
   const handleUserNamesSave = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setPendingSaveEvent(e);
+    setShowDialog(true);
+  };
+
+  const confirmSave = () => {
     if (user1NameInput.trim() && user2NameInput.trim()) {
       updateUserNames(user1NameInput.trim(), user2NameInput.trim());
       alert("User names updated!");
     } else {
       alert("User names cannot be empty.");
     }
+    setShowDialog(false);
+    setPendingSaveEvent(null);
   };
 
   const uploadAvatar = async (file: File, user: 1 | 2) => {
@@ -364,6 +385,26 @@ const UserSettings: React.FC<UserSettingsProps> = ({
             </Button>
           </div>
         </form>
+        <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Heads up!</AlertDialogTitle>
+              <AlertDialogDescription>
+                Changing user names won't update past transactions. Old
+                transactions will still show the previous names and won't be
+                linked to the new names.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowDialog(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={confirmSave} autoFocus>
+                Continue & Save
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

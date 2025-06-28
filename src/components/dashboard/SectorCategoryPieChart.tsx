@@ -72,6 +72,11 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   reimbursementImageUrl,
   handleSetEditingTransaction,
 }) => {
+  // Find categories not linked to any sector
+  const unlinkedCategories = categories.filter(
+    (cat) => !sectors.some((sector) => sector.category_ids.includes(cat.id))
+  );
+
   const sectorTotals = useMemo(() => {
     const map: Record<string, number> = {};
     const expenseTransactions = transactions.filter(
@@ -82,8 +87,11 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
       const cat = categories.find((c) => c.id === expense.category_id);
       if (!cat) return;
       const sector = sectors.find((s) => s.category_ids.includes(cat.id));
-      if (!sector) return;
-
+      // If not linked to a sector, treat as its own sector
+      if (!sector) {
+        map[cat.id] = (map[cat.id] || 0) + expense.amount;
+        return;
+      }
       const reimbursements = allTransactions.filter(
         (t) =>
           t.transaction_type === "reimbursement" &&
@@ -93,15 +101,14 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
         (sum, r) => sum + r.amount,
         0
       );
-
       const netExpense = expense.amount - reimbursementTotal;
-
       if (netExpense > 0) {
         map[sector.id] = (map[sector.id] || 0) + netExpense;
       }
     });
 
-    return sectors
+    // Compose sector objects for linked sectors
+    const sectorObjs = sectors
       .map((s, i) => ({
         id: s.id,
         name: s.name,
@@ -109,59 +116,89 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
         fill: CHART_COLORS[i % CHART_COLORS.length],
       }))
       .filter((s) => s.value > 0);
-  }, [transactions, categories, sectors, allTransactions]);
+
+    // Compose sector objects for unlinked categories
+    const unlinkedObjs = unlinkedCategories
+      .map((cat, i) => ({
+        id: cat.id,
+        name: cat.name,
+        value: map[cat.id] || 0,
+        fill: CHART_COLORS[(sectors.length + i) % CHART_COLORS.length],
+      }))
+      .filter((c) => c.value > 0);
+
+    return [...sectorObjs, ...unlinkedObjs];
+  }, [transactions, categories, sectors, allTransactions, unlinkedCategories]);
 
   const getCategoryTotalsForSector = (sectorId: string) => {
+    // If sectorId is a sector, show its categories
     const sector = sectors.find((s) => s.id === sectorId);
-    if (!sector) return [];
-    const map: Record<string, number> = {};
-
-    const expenseTransactions = transactions.filter(
-      (t) =>
-        t.transaction_type === "expense" &&
-        t.category_id &&
-        sector.category_ids.includes(t.category_id)
-    );
-
-    expenseTransactions.forEach((expense) => {
-      const reimbursements = allTransactions.filter(
+    if (sector) {
+      const map: Record<string, number> = {};
+      const expenseTransactions = transactions.filter(
         (t) =>
-          t.transaction_type === "reimbursement" &&
-          t.reimburses_transaction_id === expense.id
+          t.transaction_type === "expense" &&
+          t.category_id &&
+          sector.category_ids.includes(t.category_id)
       );
-      const reimbursementTotal = reimbursements.reduce(
-        (sum, r) => sum + r.amount,
-        0
-      );
-      const netExpense = expense.amount - reimbursementTotal;
-
-      if (netExpense > 0 && expense.category_id) {
-        map[expense.category_id] = (map[expense.category_id] || 0) + netExpense;
-      }
-    });
-
-    return (
-      sector.category_ids
-        .map((catId: string, i: number) => {
-          const cat = categories.find((c) => c.id === catId);
-          return cat && map[catId]
-            ? {
-                id: cat.id,
-                name: cat.name,
-                value: map[catId],
-                fill: CHART_COLORS[i % CHART_COLORS.length],
-                image_url: cat.image_url,
-              }
-            : null;
-        })
-        .filter(Boolean) as {
-        id: string;
-        name: string;
-        value: number;
-        fill: string;
-        image_url?: string;
-      }[]
-    ).sort((a, b) => b.value - a.value);
+      expenseTransactions.forEach((expense) => {
+        const reimbursements = allTransactions.filter(
+          (t) =>
+            t.transaction_type === "reimbursement" &&
+            t.reimburses_transaction_id === expense.id
+        );
+        const reimbursementTotal = reimbursements.reduce(
+          (sum, r) => sum + r.amount,
+          0
+        );
+        const netExpense = expense.amount - reimbursementTotal;
+        if (netExpense > 0 && expense.category_id) {
+          map[expense.category_id] =
+            (map[expense.category_id] || 0) + netExpense;
+        }
+      });
+      return (
+        sector.category_ids
+          .map((catId: string, i: number) => {
+            const cat = categories.find((c) => c.id === catId);
+            return cat && map[catId]
+              ? {
+                  id: cat.id,
+                  name: cat.name,
+                  value: map[catId],
+                  fill: CHART_COLORS[i % CHART_COLORS.length],
+                  image_url: cat.image_url,
+                }
+              : null;
+          })
+          .filter(Boolean) as {
+          id: string;
+          name: string;
+          value: number;
+          fill: string;
+          image_url?: string;
+        }[]
+      ).sort((a, b) => b.value - a.value);
+    }
+    // If sectorId is an unlinked category, show just itself
+    const cat = unlinkedCategories.find((c) => c.id === sectorId);
+    if (cat) {
+      const value = sectorTotals.find((s) => s.id === cat.id)?.value || 0;
+      return [
+        {
+          id: cat.id,
+          name: cat.name,
+          value,
+          fill: CHART_COLORS[
+            (sectors.length +
+              unlinkedCategories.findIndex((c) => c.id === cat.id)) %
+              CHART_COLORS.length
+          ],
+          image_url: cat.image_url,
+        },
+      ];
+    }
+    return [];
   };
 
   const [selectedSectorId, setSelectedSectorId] = useState<string | "all">(
@@ -192,6 +229,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   const sectorOptions = [
     { id: "all", name: "All Sectors" },
     ...sectors.map((s) => ({ id: s.id, name: s.name })),
+    ...unlinkedCategories.map((cat) => ({ id: cat.id, name: cat.name })),
   ];
 
   const renderCenterLabel = ({ viewBox }: any) => {
@@ -255,16 +293,30 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   );
 
   const breakdownSectors = useMemo(() => {
-    return (
-      selectedSectorId === "all"
-        ? sectors.filter((s) => sectorTotals.some((st) => st.id === s.id))
-        : sectors.filter((s) => s.id === selectedSectorId)
-    ).sort((a, b) => {
-      const aValue = sectorTotals.find((st) => st.id === a.id)?.value || 0;
-      const bValue = sectorTotals.find((st) => st.id === b.id)?.value || 0;
-      return bValue - aValue;
-    });
-  }, [selectedSectorId, sectors, sectorTotals]);
+    // For "all", show all sectors and unlinked categories that have values
+    if (selectedSectorId === "all") {
+      const sectorObjs = sectors.filter((s) =>
+        sectorTotals.some((st) => st.id === s.id)
+      );
+      const unlinkedObjs = unlinkedCategories.filter((cat) =>
+        sectorTotals.some((st) => st.id === cat.id)
+      );
+      // For breakdown, treat unlinked categories as sectors
+      return [...sectorObjs, ...unlinkedObjs].sort((a, b) => {
+        const aValue = sectorTotals.find((st) => st.id === a.id)?.value || 0;
+        const bValue = sectorTotals.find((st) => st.id === b.id)?.value || 0;
+        return bValue - aValue;
+      });
+    } else {
+      // If selected is a sector
+      const sector = sectors.find((s) => s.id === selectedSectorId);
+      if (sector) return [sector];
+      // If selected is an unlinked category
+      const cat = unlinkedCategories.find((c) => c.id === selectedSectorId);
+      if (cat) return [cat];
+      return [];
+    }
+  }, [selectedSectorId, sectors, sectorTotals, unlinkedCategories]);
 
   const [expandedSectors, setExpandedSectors] = useState<string[]>([]);
   const allExpanded = expandedSectors.length === breakdownSectors.length;

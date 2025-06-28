@@ -212,6 +212,7 @@ const SettingsPage = () => {
           deleteCategory={deleteCategory}
           updateCategory={updateCategory}
           refetchCategories={refetchCategories}
+          sectors={sectors}
         />
 
         <SectorSettings
