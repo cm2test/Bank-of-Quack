@@ -364,6 +364,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             <Input
               id="amount"
               type="number"
+              inputMode="decimal"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}

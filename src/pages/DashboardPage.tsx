@@ -180,6 +180,7 @@ const DashboardPage: React.FC = () => {
             settlementImageUrl={settlementImageUrl}
             reimbursementImageUrl={reimbursementImageUrl}
             handleSetEditingTransaction={handleSetEditingTransaction}
+            personInvolvementFilter={personInvolvementFilter}
           />
           <Card>
             <CardContent className="pt-6">

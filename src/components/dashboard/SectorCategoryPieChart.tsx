@@ -56,6 +56,7 @@ interface SectorCategoryPieChartProps {
   settlementImageUrl?: string;
   reimbursementImageUrl?: string;
   handleSetEditingTransaction: (transaction: Transaction) => void;
+  personInvolvementFilter: { user1: boolean; user2: boolean; shared: boolean };
 }
 
 const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
@@ -71,6 +72,7 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
   settlementImageUrl,
   reimbursementImageUrl,
   handleSetEditingTransaction,
+  personInvolvementFilter,
 }) => {
   // Find categories not linked to any sector
   const unlinkedCategories = categories.filter(
@@ -83,15 +85,20 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
       (t) => t.transaction_type === "expense"
     );
 
+    // Determine filter mode
+    const onlyUser1Selected =
+      personInvolvementFilter.user1 &&
+      !personInvolvementFilter.user2 &&
+      personInvolvementFilter.shared;
+    const onlyUser2Selected =
+      !personInvolvementFilter.user1 &&
+      personInvolvementFilter.user2 &&
+      personInvolvementFilter.shared;
+
     expenseTransactions.forEach((expense) => {
       const cat = categories.find((c) => c.id === expense.category_id);
       if (!cat) return;
       const sector = sectors.find((s) => s.category_ids.includes(cat.id));
-      // If not linked to a sector, treat as its own sector
-      if (!sector) {
-        map[cat.id] = (map[cat.id] || 0) + expense.amount;
-        return;
-      }
       const reimbursements = allTransactions.filter(
         (t) =>
           t.transaction_type === "reimbursement" &&
@@ -101,10 +108,32 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
         (sum, r) => sum + r.amount,
         0
       );
-      const netExpense = expense.amount - reimbursementTotal;
-      if (netExpense > 0) {
-        map[sector.id] = (map[sector.id] || 0) + netExpense;
+      let netExpense = expense.amount - reimbursementTotal;
+      if (netExpense <= 0) return;
+
+      // Apply personInvolvementFilter logic
+      let filteredAmount = 0;
+      if (onlyUser1Selected) {
+        if (expense.split_type === "user1_only") {
+          filteredAmount = netExpense;
+        } else if (expense.split_type === "splitEqually") {
+          filteredAmount = netExpense / 2;
+        }
+      } else if (onlyUser2Selected) {
+        if (expense.split_type === "user2_only") {
+          filteredAmount = netExpense;
+        } else if (expense.split_type === "splitEqually") {
+          filteredAmount = netExpense / 2;
+        }
+      } else {
+        filteredAmount = netExpense;
       }
+
+      if (!sector) {
+        map[cat.id] = (map[cat.id] || 0) + filteredAmount;
+        return;
+      }
+      map[sector.id] = (map[sector.id] || 0) + filteredAmount;
     });
 
     // Compose sector objects for linked sectors
@@ -128,7 +157,14 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
       .filter((c) => c.value > 0);
 
     return [...sectorObjs, ...unlinkedObjs];
-  }, [transactions, categories, sectors, allTransactions, unlinkedCategories]);
+  }, [
+    transactions,
+    categories,
+    sectors,
+    allTransactions,
+    unlinkedCategories,
+    personInvolvementFilter,
+  ]);
 
   const getCategoryTotalsForSector = (sectorId: string) => {
     // If sectorId is a sector, show its categories
@@ -141,6 +177,15 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
           t.category_id &&
           sector.category_ids.includes(t.category_id)
       );
+      // Determine filter mode
+      const onlyUser1Selected =
+        personInvolvementFilter.user1 &&
+        !personInvolvementFilter.user2 &&
+        personInvolvementFilter.shared;
+      const onlyUser2Selected =
+        !personInvolvementFilter.user1 &&
+        personInvolvementFilter.user2 &&
+        personInvolvementFilter.shared;
       expenseTransactions.forEach((expense) => {
         const reimbursements = allTransactions.filter(
           (t) =>
@@ -151,11 +196,27 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
           (sum, r) => sum + r.amount,
           0
         );
-        const netExpense = expense.amount - reimbursementTotal;
-        if (netExpense > 0 && expense.category_id) {
-          map[expense.category_id] =
-            (map[expense.category_id] || 0) + netExpense;
+        let netExpense = expense.amount - reimbursementTotal;
+        if (netExpense <= 0 || !expense.category_id) return;
+        // Apply personInvolvementFilter logic
+        let filteredAmount = 0;
+        if (onlyUser1Selected) {
+          if (expense.split_type === "user1_only") {
+            filteredAmount = netExpense;
+          } else if (expense.split_type === "splitEqually") {
+            filteredAmount = netExpense / 2;
+          }
+        } else if (onlyUser2Selected) {
+          if (expense.split_type === "user2_only") {
+            filteredAmount = netExpense;
+          } else if (expense.split_type === "splitEqually") {
+            filteredAmount = netExpense / 2;
+          }
+        } else {
+          filteredAmount = netExpense;
         }
+        map[expense.category_id] =
+          (map[expense.category_id] || 0) + filteredAmount;
       });
       return (
         sector.category_ids
