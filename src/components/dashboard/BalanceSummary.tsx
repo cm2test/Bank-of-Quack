@@ -143,9 +143,22 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
 
       if (type === "expense") {
         if (t.paid_by_user_name === "Shared") {
-          return;
-        }
-        if (t.paid_by_user_name === user1) {
+          if (t.split_type === "splitEqually") {
+            // Ignore shared/equal split
+            return;
+          } else if (t.split_type === "user1_only") {
+            // user1 owes user2 half the amount
+            change = amount / 2;
+            explanation = `${user1} owes ${user2} half of a shared expense.`;
+          } else if (t.split_type === "user2_only") {
+            // user2 owes user1 half the amount
+            change = -amount / 2;
+            explanation = `${user2} owes ${user1} half of a shared expense.`;
+          } else {
+            // Unknown split type, ignore
+            return;
+          }
+        } else if (t.paid_by_user_name === user1) {
           if (t.split_type === "splitEqually") {
             change = -amount / 2;
             explanation = `${user2}'s half of a purchase made by ${user1}.`;
@@ -387,13 +400,17 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           size="icon"
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-muted-foreground"
+          aria-label="calculation steps"
         >
           <HelpCircle className="h-5 w-5" />
         </Button>
       </CardHeader>
       <CardContent>
         {isExpanded ? (
-          <div className="max-h-96 overflow-y-auto pr-2 -mr-4 space-y-1 scrollbar-hide">
+          <div
+            className="max-h-96 overflow-y-auto pr-2 -mr-4 space-y-1 scrollbar-hide"
+            data-testid="calculation-steps"
+          >
             <div className="pt-2">
               {calculationSteps.length > 0 ? (
                 calculationSteps.map((step, index) => (

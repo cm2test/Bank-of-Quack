@@ -6,4 +6,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   envPrefix: ["VITE_", "SUPABASE_"],
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/setupTests.ts"],
+    globals: true,
+    coverage: {
+      reporter: ["text", "html"],
+    },
+  },
 });
