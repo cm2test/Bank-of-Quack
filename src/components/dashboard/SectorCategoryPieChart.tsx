@@ -566,13 +566,23 @@ const SectorCategoryPieChart: React.FC<SectorCategoryPieChartProps> = ({
                             )}
                           </div>
                           <div className="text-xs">
-                            <p className="font-semibold truncate">{cat.name}</p>
+                            <p
+                              className={
+                                `font-semibold break-words text-center` +
+                                (cat.name.length > 14
+                                  ? " text-[11px] leading-tight"
+                                  : "")
+                              }
+                              title={cat.name}
+                              style={{ maxHeight: "2.5em", overflow: "hidden" }}
+                            >
+                              {cat.name}
+                            </p>
                             <p>
                               {showValues ? formatMoney(cat.value) : "•••••"}
                             </p>
                             <p className="text-muted-foreground">
-                              ({((cat.value / sectorTotal) * 100).toFixed(1)}
-                              %)
+                              ({((cat.value / sectorTotal) * 100).toFixed(1)}%)
                             </p>
                           </div>
                         </div>

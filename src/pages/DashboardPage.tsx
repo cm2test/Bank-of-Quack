@@ -2,7 +2,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Filter as FilterIcon } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Filter as FilterIcon,
+  Banknote,
+  Shield,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import BottomNavBar from "@/components/dashboard/BottomNavBar";
@@ -13,6 +19,19 @@ import SectorCategoryPieChart from "../components/dashboard/SectorCategoryPieCha
 import FilterSheet from "../components/dashboard/FilterSheet";
 import { useTransactionFilters } from "../hooks/useTransactionFilters";
 import { Transaction, Category, Sector } from "@/types";
+import { Toggle } from "@/components/ui/toggle";
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DashboardPageContext {
   transactions: Transaction[];
@@ -76,9 +95,32 @@ const DashboardPage: React.FC = () => {
 
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
-  React.useEffect(() => {
+  const [hideOptions, setHideOptions] = useState(() => {
+    const stored = localStorage.getItem("dashboard_hide_options");
+    return stored
+      ? JSON.parse(stored)
+      : {
+          hideAmounts: false,
+          hideIncome: false,
+          blurSummary: false,
+        };
+  });
+
+  useEffect(() => {
     localStorage.setItem("dashboard_show_values", showValues.toString());
   }, [showValues]);
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_hide_options", JSON.stringify(hideOptions));
+  }, [hideOptions]);
+
+  const handleOptionChange =
+    (option: keyof typeof hideOptions) => (checked: boolean) => {
+      setHideOptions((prev: typeof hideOptions) => ({
+        ...prev,
+        [option]: checked,
+      }));
+    };
 
   if (!transactions) return <div>Loading...</div>;
 
@@ -141,31 +183,84 @@ const DashboardPage: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-white">Dashboard</h2>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowValues((prev) => !prev)}
-              className="text-white hover:bg-white/10"
-            >
-              {showValues ? <EyeOff /> : <Eye />}
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/10"
+                  aria-label="Hide options"
+                >
+                  {hideOptions.hideAmounts ? <EyeOff /> : <Shield />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-4 space-y-3" align="end">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hide-amounts"
+                    checked={hideOptions.hideAmounts}
+                    onCheckedChange={handleOptionChange("hideAmounts")}
+                  />
+                  <label
+                    htmlFor="hide-amounts"
+                    className="text-sm cursor-pointer select-none"
+                  >
+                    Hide all amounts
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hide-income"
+                    checked={hideOptions.hideIncome}
+                    onCheckedChange={handleOptionChange("hideIncome")}
+                  />
+                  <label
+                    htmlFor="hide-income"
+                    className="text-sm cursor-pointer select-none"
+                  >
+                    Hide income & net saved
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="blur-summary"
+                    checked={hideOptions.blurSummary}
+                    onCheckedChange={handleOptionChange("blurSummary")}
+                  />
+                  <label
+                    htmlFor="blur-summary"
+                    className="text-sm cursor-pointer select-none"
+                  >
+                    Blur summary numbers
+                  </label>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <div className="space-y-4">
           <BalanceSummary
-            transactions={filteredTransactions}
+            transactions={
+              hideOptions.hideIncome
+                ? filteredTransactions.filter(
+                    (t) => t.transaction_type !== "income"
+                  )
+                : filteredTransactions
+            }
             allTransactions={transactions}
             userNames={userNames}
             user1AvatarUrl={user1AvatarUrl || null}
             user2AvatarUrl={user2AvatarUrl || null}
-            showValues={showValues}
+            showValues={!hideOptions.hideAmounts}
           />
           <ExpensesIncomeNetWidget
             transactions={filteredTransactions}
             allTransactions={transactions}
             userNames={userNames}
-            showValues={showValues}
+            showValues={!hideOptions.hideAmounts}
             personInvolvementFilter={personInvolvementFilter}
+            hideIncome={hideOptions.hideIncome}
+            blurSummary={hideOptions.blurSummary}
           />
           <SectorCategoryPieChart
             sectors={sectors}
@@ -173,7 +268,7 @@ const DashboardPage: React.FC = () => {
             transactions={filteredTransactions}
             allTransactions={transactions}
             emptyStateImageUrl={sectorCategoryEmptyStateImageUrl}
-            showValues={showValues}
+            showValues={!hideOptions.hideAmounts}
             deleteTransaction={deleteTransaction}
             userNames={userNames}
             incomeImageUrl={incomeImageUrl}
@@ -185,10 +280,16 @@ const DashboardPage: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <TransactionList
-                transactions={filteredTransactions}
+                transactions={
+                  hideOptions.hideIncome
+                    ? filteredTransactions.filter(
+                        (t) => t.transaction_type !== "income"
+                      )
+                    : filteredTransactions
+                }
                 categories={categories}
                 userNames={userNames}
-                showValues={showValues}
+                showValues={!hideOptions.hideAmounts}
                 incomeImageUrl={incomeImageUrl}
                 settlementImageUrl={settlementImageUrl}
                 reimbursementImageUrl={reimbursementImageUrl}

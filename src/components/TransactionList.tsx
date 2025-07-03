@@ -31,6 +31,7 @@ interface TransactionListProps {
   variant?: "default" | "dialog";
   userNames: string[];
   categories: Category[];
+  hideIncome?: boolean;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -46,6 +47,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   variant = "default",
   userNames,
   categories,
+  hideIncome = false,
 }) => {
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -100,11 +102,15 @@ const TransactionList: React.FC<TransactionListProps> = ({
     setTransactionToDelete(null);
   };
 
-  if (!transactions || transactions.length === 0) {
+  const filteredTransactions = hideIncome
+    ? transactions.filter((t) => t.transaction_type !== "income")
+    : transactions;
+
+  if (!filteredTransactions || filteredTransactions.length === 0) {
     return <p>No transactions found for the selected period.</p>;
   }
 
-  const sortedTransactions = [...transactions].sort(
+  const sortedTransactions = [...filteredTransactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
@@ -242,7 +248,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-base font-semibold truncate text-white">
+                      <div
+                        className={`text-base font-semibold text-white ${
+                          isExpanded ? "" : "truncate"
+                        }`}
+                      >
                         {t.description}
                       </div>
                       <div

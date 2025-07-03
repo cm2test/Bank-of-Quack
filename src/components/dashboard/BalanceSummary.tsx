@@ -418,12 +418,18 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
                       </div>
                       <div className="flex items-baseline gap-2 mt-1.5">
                         <p className="font-semibold text-sm text-foreground">
-                          {formatMoney(step.transaction.amount)}
+                          {showValues
+                            ? formatMoney(step.transaction.amount)
+                            : "•••••"}
                         </p>
                       </div>
                     </div>
                     <div className="col-span-2 md:col-span-1 flex items-center justify-end">
-                      {renderBalanceLine(step.newBalance)}
+                      {showValues ? (
+                        renderBalanceLine(step.newBalance)
+                      ) : (
+                        <span className="font-semibold">•••••</span>
+                      )}
                     </div>
                   </div>
                 ))

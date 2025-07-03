@@ -6,6 +6,7 @@ import "./global.css";
 
 // 1. Import necessary things from 'react-router-dom'
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // 2. Import your page components
 import DashboardPage from "./pages/DashboardPage";
@@ -45,6 +46,8 @@ const router = createBrowserRouter([
 // 4. Provide the router to your application
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <TooltipProvider>
+      <RouterProvider router={router} />
+    </TooltipProvider>
   </React.StrictMode>
 );
