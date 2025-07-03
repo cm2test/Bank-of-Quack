@@ -80,11 +80,26 @@ const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           category_name: originalExpense.category_name,
           description: `(Reimbursement for: ${originalExpense.description})`,
         };
-        console.log(
-          "Created virtual negative expense:",
-          virtualNegativeExpense
-        );
-        effectiveBalanceTransactions.push(virtualNegativeExpense);
+        // Determine beneficiary based on split_type
+        let beneficiary: string | null = null;
+        if (originalExpense.split_type === "user1_only") beneficiary = user1;
+        if (originalExpense.split_type === "user2_only") beneficiary = user2;
+        // Only add if paid_by_user_name is not the same as beneficiary
+        if (
+          !beneficiary ||
+          virtualNegativeExpense.paid_by_user_name !== beneficiary
+        ) {
+          console.log(
+            "Created virtual negative expense:",
+            virtualNegativeExpense
+          );
+          effectiveBalanceTransactions.push(virtualNegativeExpense);
+        } else {
+          console.log(
+            "Skipping virtual negative expense (self-reimbursement):",
+            virtualNegativeExpense
+          );
+        }
       }
     });
 

@@ -119,7 +119,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         setDescription(editingTransaction.description);
         setAmount(editingTransaction.amount.toString());
         setPaidOrReceivedBy(
-          userNames.includes(editingTransaction.paid_by_user_name!)
+          editingTransaction.paid_by_user_name === "Shared"
+            ? "Shared"
+            : userNames.includes(editingTransaction.paid_by_user_name!)
             ? editingTransaction.paid_by_user_name!
             : userNames[0]
         );
@@ -391,6 +393,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 <SelectValue placeholder="Select user" />
               </SelectTrigger>
               <SelectContent>
+                {transactionType === "expense" && (
+                  <SelectItem key="Shared" value="Shared">
+                    Shared
+                  </SelectItem>
+                )}
                 {userNames.map((user) => (
                   <SelectItem key={user} value={user}>
                     {user}
