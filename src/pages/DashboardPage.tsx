@@ -2,13 +2,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Eye,
-  EyeOff,
-  Filter as FilterIcon,
-  Banknote,
-  Shield,
-} from "lucide-react";
+import { Eye, EyeOff, Filter as FilterIcon, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import BottomNavBar from "@/components/dashboard/BottomNavBar";
@@ -32,6 +26,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FilterSummary } from "../components/dashboard/FilterSheet";
 
 interface DashboardPageContext {
   transactions: Transaction[];
@@ -177,65 +172,87 @@ const DashboardPage: React.FC = () => {
         sectors={sectors}
         isOpen={isFilterSheetOpen}
         setIsOpen={setIsFilterSheetOpen}
+        isFiltered={isFiltered}
       />
 
       <div className="max-w-4xl mx-auto w-full p-4 relative z-20">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/10"
-                  aria-label="Hide options"
-                >
-                  {hideOptions.hideAmounts ? <EyeOff /> : <Shield />}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-4 space-y-3" align="end">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="hide-amounts"
-                    checked={hideOptions.hideAmounts}
-                    onCheckedChange={handleOptionChange("hideAmounts")}
-                  />
-                  <label
-                    htmlFor="hide-amounts"
-                    className="text-sm cursor-pointer select-none"
+          <div className="flex items-center justify-between w-full gap-2 sm:gap-4 md:gap-6">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-white">Dashboard</h2>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-white/10"
+                    aria-label="Hide options"
                   >
-                    Hide all amounts
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="hide-income"
-                    checked={hideOptions.hideIncome}
-                    onCheckedChange={handleOptionChange("hideIncome")}
-                  />
-                  <label
-                    htmlFor="hide-income"
-                    className="text-sm cursor-pointer select-none"
-                  >
-                    Hide income & net saved
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="blur-summary"
-                    checked={hideOptions.blurSummary}
-                    onCheckedChange={handleOptionChange("blurSummary")}
-                  />
-                  <label
-                    htmlFor="blur-summary"
-                    className="text-sm cursor-pointer select-none"
-                  >
-                    Blur summary numbers
-                  </label>
-                </div>
-              </PopoverContent>
-            </Popover>
+                    {hideOptions.hideAmounts ||
+                    hideOptions.hideIncome ||
+                    hideOptions.blurSummary ? (
+                      <EyeOff />
+                    ) : (
+                      <Eye />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-4 space-y-3" align="end">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hide-amounts"
+                      checked={hideOptions.hideAmounts}
+                      onCheckedChange={handleOptionChange("hideAmounts")}
+                    />
+                    <label
+                      htmlFor="hide-amounts"
+                      className="text-sm cursor-pointer select-none"
+                    >
+                      Hide all amounts
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hide-income"
+                      checked={hideOptions.hideIncome}
+                      onCheckedChange={handleOptionChange("hideIncome")}
+                    />
+                    <label
+                      htmlFor="hide-income"
+                      className="text-sm cursor-pointer select-none"
+                    >
+                      Hide income & net saved
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="blur-summary"
+                      checked={hideOptions.blurSummary}
+                      onCheckedChange={handleOptionChange("blurSummary")}
+                    />
+                    <label
+                      htmlFor="blur-summary"
+                      className="text-sm cursor-pointer select-none"
+                    >
+                      Blur summary numbers
+                    </label>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <FilterSummary
+              startDate={startDate}
+              endDate={endDate}
+              personInvolvementFilter={personInvolvementFilter}
+              userNames={userNames}
+              categorySectorFilter={categorySectorFilter}
+              categories={categories}
+              sectors={sectors}
+              descriptionFilter={descriptionFilter}
+              isFiltered={true}
+              dashboardMode={true}
+              className="ml-1 sm:ml-4"
+            />
           </div>
         </div>
         <div className="space-y-4">

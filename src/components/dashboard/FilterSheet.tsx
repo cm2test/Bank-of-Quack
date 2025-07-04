@@ -18,7 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter as FilterIcon, ArrowLeft, ArrowRight, X } from "lucide-react";
+import {
+  Filter as FilterIcon,
+  ArrowLeft,
+  ArrowRight,
+  X,
+  RotateCcw,
+  Home,
+} from "lucide-react";
 import { Category, Sector } from "@/types";
 import {
   formatDateForInput,
@@ -44,6 +51,7 @@ interface FilterSheetProps {
   sectors: Sector[];
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  isFiltered: boolean;
 }
 
 const FilterSheet: React.FC<FilterSheetProps> = ({
@@ -62,6 +70,7 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
   sectors,
   isOpen,
   setIsOpen,
+  isFiltered,
 }) => {
   const setDateRange = (range: "thisMonth" | "lastMonth" | "thisYear") => {
     const now = new Date();
@@ -97,6 +106,15 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
 
     setStartDate(formatDateForInput(newStart));
     setEndDate(formatDateForInput(newEnd));
+  };
+
+  const resetFilters = () => {
+    const now = new Date();
+    setStartDate(formatDateForInput(getFirstDayOfMonth(now)));
+    setEndDate(formatDateForInput(getLastDayOfMonth(now)));
+    setPersonInvolvementFilter({ user1: true, user2: true, shared: true });
+    setCategorySectorFilter("all");
+    setDescriptionFilter("");
   };
 
   return (
@@ -273,10 +291,165 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
               className="bg-black/20 border-white/20"
             />
           </div>
+          <div className="flex items-center justify-between mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 bg-black/20 border-white/20 text-white hover:bg-black/40 flex-grow max-w-xs"
+              onClick={() => setIsOpen(false)}
+            >
+              <Home className="w-4 h-4 mr-1" />
+              <span className="hidden xs:inline">Back to Dashboard</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-black/20 border-white/20 text-white hover:bg-black/40"
+              onClick={resetFilters}
+              aria-label="Reset Filters"
+              disabled={!isFiltered}
+            >
+              <RotateCcw className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 };
 
+const FilterSummary: React.FC<{
+  startDate: string;
+  endDate: string;
+  personInvolvementFilter: { user1: boolean; user2: boolean; shared: boolean };
+  userNames: string[];
+  categorySectorFilter: string;
+  categories: Category[];
+  sectors: Sector[];
+  descriptionFilter: string;
+  isFiltered: boolean;
+  dashboardMode?: boolean;
+  className?: string;
+}> = ({
+  startDate,
+  endDate,
+  personInvolvementFilter,
+  userNames,
+  categorySectorFilter,
+  categories,
+  sectors,
+  descriptionFilter,
+  isFiltered,
+  dashboardMode = false,
+  className = "",
+}) => {
+  if (!isFiltered && !dashboardMode) return null;
+
+  // Date summary
+  const now = new Date();
+  const firstOfMonth = formatDateForInput(getFirstDayOfMonth(now));
+  const lastOfMonth = formatDateForInput(getLastDayOfMonth(now));
+  let dateSummary = "";
+  // Parse as UTC to avoid timezone issues
+  const parseUTC = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  };
+  const start = parseUTC(startDate);
+  const end = parseUTC(endDate);
+  if (startDate === firstOfMonth && endDate === lastOfMonth) {
+    dateSummary = start.toLocaleString(undefined, {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  } else if (
+    start.getUTCDate() === 1 &&
+    end.getUTCDate() ===
+      new Date(
+        Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)
+      ).getUTCDate() &&
+    start.getUTCFullYear() === end.getUTCFullYear() &&
+    start.getUTCMonth() === end.getUTCMonth()
+  ) {
+    // Full single month
+    dateSummary = start.toLocaleString(undefined, {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  } else {
+    dateSummary = `${start.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    })} – ${end.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    })}`;
+  }
+
+  // People summary
+  let peopleSummary = "All people";
+  const { user1, user2, shared } = personInvolvementFilter;
+  if (user1 && !user2 && !shared) peopleSummary = userNames[0];
+  else if (!user1 && user2 && !shared) peopleSummary = userNames[1];
+  else if (!user1 && !user2 && shared) peopleSummary = "Shared only";
+  else if (user1 && shared && !user2)
+    peopleSummary = `${userNames[0]} & Shared`;
+  else if (user2 && shared && !user1)
+    peopleSummary = `${userNames[1]} & Shared`;
+  else if (user1 && user2 && !shared)
+    peopleSummary = `${userNames[0]} & ${userNames[1]}`;
+  else if (!user1 && !user2 && !shared) peopleSummary = "None";
+
+  // Category/Sector summary
+  let catSummary = "All categories/sectors";
+  if (categorySectorFilter !== "all") {
+    if (categorySectorFilter === "uncategorized") {
+      catSummary = "Uncategorized";
+    } else {
+      const sector = sectors.find((s) => s.id === categorySectorFilter);
+      if (sector) catSummary = `${sector.name} (Sector)`;
+      else {
+        const cat = categories.find((c) => c.id === categorySectorFilter);
+        if (cat) catSummary = `${cat.name} (Category)`;
+      }
+    }
+  }
+
+  // Description summary
+  let descSummary = "";
+  if (descriptionFilter) descSummary = `Description: ${descriptionFilter}`;
+
+  // Compose summary
+  const parts = [dateSummary];
+  // Only show non-defaults in dashboardMode, otherwise show all
+  if (!dashboardMode || peopleSummary !== "All people")
+    parts.push(peopleSummary);
+  if (!dashboardMode || catSummary !== "All categories/sectors")
+    parts.push(catSummary);
+  if (descSummary) parts.push(descSummary);
+  // In dashboardMode, only show people/category if not default
+  return (
+    <div className={`my-2 flex flex-wrap gap-2 text-xs ${className}`}>
+      <span className="bg-black/30 rounded-md px-4 py-2 text-white border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2 whitespace-pre-line">
+        {parts.filter(Boolean).map((part, i) => (
+          <span key={i} className="block sm:inline">
+            {part}
+            {i < parts.length - 1 && (
+              <span className="hidden sm:inline"> • </span>
+            )}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+};
+
 export default FilterSheet;
+
+export { FilterSummary };
