@@ -294,22 +294,22 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
           <div className="flex items-center justify-between mt-4">
             <Button
               variant="outline"
-              size="sm"
-              className="flex items-center gap-2 bg-black/20 border-white/20 text-white hover:bg-black/40 flex-grow max-w-xs"
+              size="lg"
+              className="flex items-center gap-2 bg-black/20 border-white/20 text-white hover:bg-black/40 flex-grow max-w-xs py-4 px-6 text-lg"
               onClick={() => setIsOpen(false)}
             >
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="w-7 h-7 mr-2" />
               <span className="hidden xs:inline">Back to Dashboard</span>
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="bg-black/20 border-white/20 text-white hover:bg-black/40"
+              className="bg-black/20 border-white/20 text-white hover:bg-black/40 w-14 h-14"
               onClick={resetFilters}
               aria-label="Reset Filters"
               disabled={!isFiltered}
             >
-              <RotateCcw className="h-5 w-5" />
+              <RotateCcw className="h-8 w-8" />
             </Button>
           </div>
         </div>

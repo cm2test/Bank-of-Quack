@@ -23,18 +23,22 @@ const TransactionsPage: React.FC = () => {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto w-full p-4">
-        {/* The TransactionForm will dynamically change its title and behavior 
-            based on whether `editingTransaction` is set in the context */}
-        <TransactionForm
-          userNames={context.userNames}
-          categories={context.categories}
-          transactions={context.transactions}
-          editingTransaction={context.editingTransaction}
-          addTransaction={context.addTransaction}
-          updateTransaction={context.updateTransaction}
-          handleSetEditingTransaction={context.handleSetEditingTransaction}
-        />
+      <div
+        className="min-h-[calc(100vh-0px)] flex flex-col md:justify-center md:items-center md:min-h-[calc(100vh-0px)]" // vertical + horizontal centering on md+
+      >
+        <div className="max-w-4xl mx-auto w-full p-4">
+          {/* The TransactionForm will dynamically change its title and behavior 
+              based on whether `editingTransaction` is set in the context */}
+          <TransactionForm
+            userNames={context.userNames}
+            categories={context.categories}
+            transactions={context.transactions}
+            editingTransaction={context.editingTransaction}
+            addTransaction={context.addTransaction}
+            updateTransaction={context.updateTransaction}
+            handleSetEditingTransaction={context.handleSetEditingTransaction}
+          />
+        </div>
       </div>
       <DuckFabNav open={context.open} setOpen={context.setOpen} />
     </>

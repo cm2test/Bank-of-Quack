@@ -143,18 +143,20 @@ const DashboardPage: React.FC = () => {
         </h1>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsFilterSheetOpen(true)}
-        className={cn(
-          "fixed bottom-28 right-4 z-[60] bg-black/30 text-white rounded-full w-14 h-14 hover:bg-black/50 transition-all duration-300",
-          isFiltered && "border-2 border-yellow-400",
-          fabOpen && "translate-y-24 opacity-0 pointer-events-none"
-        )}
-      >
-        <FilterIcon />
-      </Button>
+      {!isFilterSheetOpen && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFilterSheetOpen(true)}
+          className={cn(
+            "fixed bottom-28 right-4 z-[60] bg-black/30 text-white rounded-full w-14 h-14 hover:bg-black/50 transition-all duration-300",
+            isFiltered && "border-2 border-yellow-400",
+            fabOpen && "translate-y-24 opacity-0 pointer-events-none"
+          )}
+        >
+          <FilterIcon />
+        </Button>
+      )}
 
       <FilterSheet
         startDate={startDate}
