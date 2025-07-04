@@ -41,6 +41,25 @@ async function expectDescriptionInSteps(desc: string) {
   expect(steps.textContent?.toLowerCase()).toContain(desc.toLowerCase());
 }
 
+// Helper to log scenario, expected, and actual output
+function logScenario({
+  scenario,
+  transactions,
+  expected,
+  actual,
+}: {
+  scenario: string;
+  transactions: Transaction[];
+  expected: any;
+  actual: any;
+}) {
+  console.group(`\nScenario: ${scenario}`);
+  console.log("Input transactions:", transactions);
+  console.log("Expected output:", expected);
+  console.log("Actual output:", actual);
+  console.groupEnd();
+}
+
 describe("BalanceSummary - business rules", () => {
   it("Income transactions have no impact on balance and do not show in calculation steps", () => {
     const transactions: Transaction[] = [
@@ -57,6 +76,7 @@ describe("BalanceSummary - business rules", () => {
         description: "Salary",
       },
     ];
+    const expected = { summary: "All square!", calculationSteps: [] };
     render(
       <BalanceSummary
         transactions={transactions}
@@ -67,8 +87,16 @@ describe("BalanceSummary - business rules", () => {
         showValues={true}
       />
     );
+    const summary = screen.getByText(/all square/i)?.textContent;
+    const actual = { summary, calculationSteps: [] };
+    logScenario({
+      scenario:
+        "Income transactions have no impact on balance and do not show in calculation steps",
+      transactions,
+      expected,
+      actual,
+    });
     expect(screen.getByText(/all square/i)).toBeInTheDocument();
-    // No need to expand calculation steps for this test
     expect(screen.queryByText(/Salary/)).not.toBeInTheDocument();
   });
 
@@ -87,6 +115,7 @@ describe("BalanceSummary - business rules", () => {
         description: "Settle up",
       },
     ];
+    const expected = { owes: "Alice", owed: "Bob", amount: 50 };
     render(
       <BalanceSummary
         transactions={transactions}
@@ -97,7 +126,17 @@ describe("BalanceSummary - business rules", () => {
         showValues={true}
       />
     );
-    expectBalanceSummary({ owes: "Alice", owed: "Bob", amount: 50 });
+    const summary = screen
+      .getByText(/balance summary/i)
+      .closest(".mb-4")?.textContent;
+    const actual = { summary };
+    logScenario({
+      scenario: "Settlement paid by Alice to Bob reduces Alice's debt",
+      transactions,
+      expected,
+      actual,
+    });
+    expectBalanceSummary(expected);
   });
 
   it('Ignores expenses where "Paid by" is the same as "split type"', () => {
@@ -115,6 +154,7 @@ describe("BalanceSummary - business rules", () => {
         description: "Alice's own expense",
       },
     ];
+    const expected = { summary: "All square!" };
     render(
       <BalanceSummary
         transactions={transactions}
@@ -125,6 +165,14 @@ describe("BalanceSummary - business rules", () => {
         showValues={true}
       />
     );
+    const summary = screen.getByText(/all square/i)?.textContent;
+    const actual = { summary };
+    logScenario({
+      scenario: 'Ignores expenses where "Paid by" is the same as "split type"',
+      transactions,
+      expected,
+      actual,
+    });
     expect(screen.getByText(/all square/i)).toBeInTheDocument();
   });
 
@@ -143,6 +191,7 @@ describe("BalanceSummary - business rules", () => {
         description: "Shared equally",
       },
     ];
+    const expected = { summary: "All square!" };
     render(
       <BalanceSummary
         transactions={transactions}
@@ -153,6 +202,15 @@ describe("BalanceSummary - business rules", () => {
         showValues={true}
       />
     );
+    const summary = screen.getByText(/all square/i)?.textContent;
+    const actual = { summary };
+    logScenario({
+      scenario:
+        'Ignores expenses where "Paid by" is "Shared" and split is equally',
+      transactions,
+      expected,
+      actual,
+    });
     expect(screen.getByText(/all square/i)).toBeInTheDocument();
   });
 
@@ -180,6 +238,7 @@ describe("BalanceSummary - business rules", () => {
           description: "Shared paid for Alice",
         },
       ];
+      const expected = { owes: "Alice", owed: "Bob", amount: 50 };
       render(
         <BalanceSummary
           transactions={transactions}
@@ -190,8 +249,19 @@ describe("BalanceSummary - business rules", () => {
           showValues={true}
         />
       );
-      expectBalanceSummary({ owes: "Alice", owed: "Bob", amount: 50 });
       await expandCalculationSteps();
+      const summary = screen
+        .getByText(/balance summary/i)
+        .closest(".mb-4")?.textContent;
+      const steps = (await getCalculationStepsContainer()).textContent;
+      const actual = { summary, steps };
+      logScenario({
+        scenario: 'Paid by "Shared" and split for user1: user1 owes user2 half',
+        transactions,
+        expected,
+        actual,
+      });
+      expectBalanceSummary(expected);
       await expectDescriptionInSteps("Shared paid for Alice");
     });
 
@@ -210,6 +280,7 @@ describe("BalanceSummary - business rules", () => {
           description: "Shared paid for Bob",
         },
       ];
+      const expected = { owes: "Bob", owed: "Alice", amount: 50 };
       render(
         <BalanceSummary
           transactions={transactions}
@@ -220,8 +291,19 @@ describe("BalanceSummary - business rules", () => {
           showValues={true}
         />
       );
-      expectBalanceSummary({ owes: "Bob", owed: "Alice", amount: 50 });
       await expandCalculationSteps();
+      const summary = screen
+        .getByText(/balance summary/i)
+        .closest(".mb-4")?.textContent;
+      const steps = (await getCalculationStepsContainer()).textContent;
+      const actual = { summary, steps };
+      logScenario({
+        scenario: 'Paid by "Shared" and split for user2: user2 owes user1 half',
+        transactions,
+        expected,
+        actual,
+      });
+      expectBalanceSummary(expected);
       await expectDescriptionInSteps("Shared paid for Bob");
     });
 
@@ -240,6 +322,7 @@ describe("BalanceSummary - business rules", () => {
           description: "Alice paid for both",
         },
       ];
+      const expected = { owes: "Bob", owed: "Alice", amount: 50 };
       render(
         <BalanceSummary
           transactions={transactions}
@@ -250,8 +333,19 @@ describe("BalanceSummary - business rules", () => {
           showValues={true}
         />
       );
-      expectBalanceSummary({ owes: "Bob", owed: "Alice", amount: 50 });
       await expandCalculationSteps();
+      const summary = screen
+        .getByText(/balance summary/i)
+        .closest(".mb-4")?.textContent;
+      const steps = (await getCalculationStepsContainer()).textContent;
+      const actual = { summary, steps };
+      logScenario({
+        scenario: "Paid by Alice and split equally: Alice is owed half by Bob",
+        transactions,
+        expected,
+        actual,
+      });
+      expectBalanceSummary(expected);
       await expectDescriptionInSteps("Alice paid for both");
     });
 
@@ -270,6 +364,7 @@ describe("BalanceSummary - business rules", () => {
           description: "Alice paid for Bob",
         },
       ];
+      const expected = { owes: "Bob", owed: "Alice", amount: 100 };
       render(
         <BalanceSummary
           transactions={transactions}
@@ -280,8 +375,20 @@ describe("BalanceSummary - business rules", () => {
           showValues={true}
         />
       );
-      expectBalanceSummary({ owes: "Bob", owed: "Alice", amount: 100 });
       await expandCalculationSteps();
+      const summary = screen
+        .getByText(/balance summary/i)
+        .closest(".mb-4")?.textContent;
+      const steps = (await getCalculationStepsContainer()).textContent;
+      const actual = { summary, steps };
+      logScenario({
+        scenario:
+          "Paid by Alice and split for Bob: Bob owes Alice the full amount",
+        transactions,
+        expected,
+        actual,
+      });
+      expectBalanceSummary(expected);
       await expectDescriptionInSteps("Alice paid for Bob");
     });
 
@@ -313,6 +420,7 @@ describe("BalanceSummary - business rules", () => {
           reimburses_transaction_id: "1",
         },
       ];
+      const expected = { owes: "Bob", owed: "Alice", amount: 35 };
       render(
         <BalanceSummary
           transactions={transactions}
@@ -323,8 +431,20 @@ describe("BalanceSummary - business rules", () => {
           showValues={true}
         />
       );
-      expectBalanceSummary({ owes: "Bob", owed: "Alice", amount: 35 });
       await expandCalculationSteps();
+      const summary = screen
+        .getByText(/balance summary/i)
+        .closest(".mb-4")?.textContent;
+      const steps = (await getCalculationStepsContainer()).textContent;
+      const actual = { summary, steps };
+      logScenario({
+        scenario:
+          "Reimbursement of an expense creates a virtual expense with correct properties",
+        transactions,
+        expected,
+        actual,
+      });
+      expectBalanceSummary(expected);
       await expectDescriptionInSteps("Dinner");
       await expectDescriptionInSteps("Reimbursement for: Dinner");
     });
@@ -345,6 +465,7 @@ describe("BalanceSummary - business rules", () => {
         description: "Random reimbursement",
       },
     ];
+    const expected = { summary: "All square!" };
     render(
       <BalanceSummary
         transactions={transactions}
@@ -355,6 +476,15 @@ describe("BalanceSummary - business rules", () => {
         showValues={true}
       />
     );
+    const summary = screen.getByText(/all square/i)?.textContent;
+    const actual = { summary };
+    logScenario({
+      scenario:
+        "Ignores reimbursement transactions that do not reimburse another transaction",
+      transactions,
+      expected,
+      actual,
+    });
     expect(screen.getByText(/all square/i)).toBeInTheDocument();
   });
 });
