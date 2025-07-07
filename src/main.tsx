@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import SettingsPage from "./pages/SettingsPage";
+import { BudgetsPage } from "./pages/BudgetsPage";
 import LoginPage from "./pages/LoginPage";
 
 // 3. Define the router configuration
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
       {
         path: "settings", // Corresponds to '/settings'
         element: <SettingsPage />,
+      },
+      {
+        path: "budgets", // Corresponds to '/budgets'
+        element: <BudgetsPage />,
       },
     ],
   },

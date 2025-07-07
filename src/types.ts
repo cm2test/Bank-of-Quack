@@ -28,3 +28,73 @@ export interface Sector {
   name: string;
   category_ids: string[];
 }
+
+// Budget-related interfaces
+export interface CategoryBudget {
+  id: string;
+  category_id: string;
+  created_at?: string;
+  updated_at?: string;
+  is_active: boolean;
+  budget_type: 'absolute' | 'split';
+  absolute_amount?: number;
+  user1_amount?: number;
+  user2_amount?: number;
+}
+
+export interface BudgetPeriod {
+  id: string;
+  category_budget_id: string;
+  year: number;
+  month: number;
+  created_at?: string;
+  updated_at?: string;
+  budget_amount: number;
+  spent_amount: number;
+  user1_spent: number;
+  user2_spent: number;
+}
+
+export interface TransactionWithBudget extends Transaction {
+  budget_id?: string;
+  budget_type?: 'absolute' | 'split';
+  budget_absolute_amount?: number;
+  budget_user1_amount?: number;
+  budget_user2_amount?: number;
+  budget_period_id?: string;
+  period_budget_amount?: number;
+  period_spent_amount?: number;
+  period_user1_spent?: number;
+  period_user2_spent?: number;
+  budget_remaining_percentage?: number;
+  budget_remaining_amount?: number;
+}
+
+export interface BudgetSummary {
+  category_id: string;
+  category_name: string;
+  category_image?: string;
+  budget_id?: string;
+  budget_type?: 'absolute' | 'split';
+  absolute_amount?: number;
+  user1_amount?: number;
+  user2_amount?: number;
+  is_active?: boolean;
+  current_year: number;
+  current_month: number;
+  current_period_budget?: number;
+  current_period_spent?: number;
+  current_period_user1_spent?: number;
+  current_period_user2_spent?: number;
+  current_period_remaining_percentage?: number;
+  current_period_remaining_amount?: number;
+}
+
+export interface BudgetFormData {
+  category_id: string;
+  budget_type: 'absolute' | 'split';
+  absolute_amount?: number;
+  user1_amount?: number;
+  user2_amount?: number;
+  is_active: boolean;
+}

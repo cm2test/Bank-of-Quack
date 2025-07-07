@@ -257,6 +257,8 @@ Now, go to your deployed app URL and log in with the email and password you just
 Open your repo on GitHub → click **Sync fork → Update branch**.  
 Vercel sees the push and deploys the new version automatically.
 
+### IMPORTANT: keep your database up to date as well
+
 ## 📝 Customisation pointers
 
 - **Rename users / upload avatars** – Settings → _Profile_
