@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Home, Plus, Settings as SettingsIcon, LogOut } from "lucide-react";
+import {
+  Home,
+  Plus,
+  Settings as SettingsIcon,
+  LogOut,
+  DollarSign,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/supabaseClient";
@@ -14,6 +20,11 @@ const NAV_LINKS = [
     label: "New Transaction",
     icon: <Plus className="w-6 h-6 text-green-500" />,
     to: "/transactions",
+  },
+  {
+    label: "Budgets",
+    icon: <DollarSign className="w-6 h-6 text-green-500" />,
+    to: "/budgets",
   },
   {
     label: "Settings",

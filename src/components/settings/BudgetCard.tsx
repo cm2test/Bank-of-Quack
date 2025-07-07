@@ -31,7 +31,6 @@ export function BudgetCard({
     absolute_amount,
     user1_amount,
     user2_amount,
-    is_active,
     current_period_budget,
     current_period_spent,
     current_period_user1_spent,
@@ -62,7 +61,7 @@ export function BudgetCard({
   };
 
   return (
-    <Card className={`w-full ${!is_active ? "opacity-60" : ""}`}>
+    <Card className="w-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -94,7 +93,6 @@ export function BudgetCard({
                   absolute_amount,
                   user1_amount,
                   user2_amount,
-                  is_active: is_active!,
                 })
               }
             >
@@ -178,20 +176,6 @@ export function BudgetCard({
             )}
           </div>
         )}
-
-        {/* Status Indicator */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <span className="text-xs text-muted-foreground">
-            Status: {is_active ? "Active" : "Inactive"}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onToggleActive(budgetSummary.budget_id!, !is_active)}
-          >
-            {is_active ? "Deactivate" : "Activate"}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

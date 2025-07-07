@@ -33,7 +33,6 @@ export function BudgetForm({
     absolute_amount: undefined,
     user1_amount: undefined,
     user2_amount: undefined,
-    is_active: true,
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +73,6 @@ export function BudgetForm({
         absolute_amount: existingBudget.absolute_amount,
         user1_amount: existingBudget.user1_amount,
         user2_amount: existingBudget.user2_amount,
-        is_active: existingBudget.is_active,
       });
     }
   }, [existingBudget]);
@@ -98,7 +96,7 @@ export function BudgetForm({
               formData.budget_type === "split" ? formData.user1_amount : null,
             user2_amount:
               formData.budget_type === "split" ? formData.user2_amount : null,
-            is_active: formData.is_active,
+
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingBudget.id);
@@ -117,7 +115,6 @@ export function BudgetForm({
             formData.budget_type === "split" ? formData.user1_amount : null,
           user2_amount:
             formData.budget_type === "split" ? formData.user2_amount : null,
-          is_active: formData.is_active,
         });
 
         if (error) throw error;
@@ -260,18 +257,6 @@ export function BudgetForm({
                 )}
             </div>
           )}
-
-          {/* Active Toggle */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked: boolean) =>
-                setFormData((prev) => ({ ...prev, is_active: checked }))
-              }
-            />
-            <Label htmlFor="is_active">Active Budget</Label>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex space-x-2 pt-4">

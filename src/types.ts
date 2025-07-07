@@ -35,7 +35,6 @@ export interface CategoryBudget {
   category_id: string;
   created_at?: string;
   updated_at?: string;
-  is_active: boolean;
   budget_type: 'absolute' | 'split';
   absolute_amount?: number;
   user1_amount?: number;
@@ -79,7 +78,6 @@ export interface BudgetSummary {
   absolute_amount?: number;
   user1_amount?: number;
   user2_amount?: number;
-  is_active?: boolean;
   current_year: number;
   current_month: number;
   current_period_budget?: number;
@@ -96,5 +94,4 @@ export interface BudgetFormData {
   absolute_amount?: number;
   user1_amount?: number;
   user2_amount?: number;
-  is_active: boolean;
 }
